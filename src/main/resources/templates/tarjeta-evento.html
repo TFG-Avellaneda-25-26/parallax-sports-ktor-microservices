@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <style>
+        body { width: 700px; height: 350px; background: #0b0b0f; color: white; margin: 0; font-family: 'Arial'; }
+        .container {
+            border: 4px solid #f09; /* Color según el tipo de evento */
+            padding: 30px;
+            background: linear-gradient(180deg, rgba(20,20,30,1) 0%, rgba(10,10,15,1) 100%);
+            height: 100%; box-sizing: border-box;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .header { font-size: 20px; color: #f09; text-transform: uppercase; font-weight: bold; }
+        .matchup { display: flex; justify-content: space-around; align-items: center; font-size: 40px; font-weight: 900; }
+        .footer { font-size: 18px; color: #888; border-top: 1px solid #333; padding-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header" th:text="${evento.tipoEvento}">LEC</div>
+    <div class="matchup">
+        <span th:text="${evento.equipoLocal}">G2</span>
+        <span>VS</span>
+        <span th:text="${evento.equipoVisitante}">FNC</span>
+    </div>
+    <div class="footer">
+        📍 <span th:text="${evento.ubicacion}">Berlín</span> |
+        ⏰ <span th:text="${#temporals.format(evento.fechaHora, 'HH:mm')}">20:00</span>
+    </div>
+</div>
+</body>
+</html>
