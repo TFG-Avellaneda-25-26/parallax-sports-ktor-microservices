@@ -1,0 +1,72 @@
+:root {
+    --primary-color: #ff0099; /* Puedes dinamizar esto según el evento */
+    --bg-dark: #0f1015;
+}
+body {
+    width: 800px; height: 400px;
+    margin: 0; padding: 0;
+    background: var(--bg-dark);
+    font-family: 'Rajdhani', sans-serif;
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+}
+.card {
+    width: 760px; height: 360px;
+    background: linear-gradient(135deg, #1a1b23 0%, #0a0a0c 100%);
+    border-left: 8px solid var(--primary-color);
+    position: relative;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+/* Decoración de fondo */
+.card::before {
+    content: ""; position: absolute; top: -50px; right: -50px;
+    width: 200px; height: 200px;
+    background: var(--primary-color);
+    filter: blur(100px); opacity: 0.15;
+}
+.header {
+    padding: 25px 40px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.event-tag {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px; font-weight: 900;
+    letter-spacing: 3px; color: var(--primary-color);
+    text-shadow: 0 0 10px rgba(255, 0, 153, 0.5);
+}
+.matchup {
+    flex-grow: 1;
+    display: flex; justify-content: center; align-items: center;
+    gap: 40px; padding-bottom: 20px;
+}
+.team {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    width: 280px;
+}
+/* Si tienes URLs de logos en tu DTO, úsalos aquí */
+.team-logo {
+    width: 120px; height: 120px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.team-name {
+    font-size: 38px; font-weight: 700; text-transform: uppercase;
+}
+.vs-badge {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px; color: #555;
+    background: rgba(255,255,255,0.05);
+    padding: 10px 15px; border-radius: 5px;
+}
+.footer {
+    background: rgba(0,0,0,0.3);
+    padding: 20px 40px;
+    display: flex; gap: 30px;
+    font-size: 20px; color: #aaa;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+.footer strong { color: white; margin-left: 5px; }

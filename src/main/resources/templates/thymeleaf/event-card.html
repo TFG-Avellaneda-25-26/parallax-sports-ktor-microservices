@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Event Card</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="card">
+    <div class="header">
+        <div class="event-tag" th:text="${event != null ? event.eventName : 'EVENT NAME'}">LEC SPRING 2024</div>
+        <div style="color: #444;">LIVE BROADCAST</div>
+    </div>
+
+    <div class="matchup">
+        <div class="team">
+            <div class="team-logo">
+                <span style="font-size: 50px;">🏠</span>
+            </div>
+            <div class="team-name" th:text="${event != null ? event.localTeam : 'LOCAL TEAM'}">LOCAL TEAM</div>
+        </div>
+
+        <div class="vs-badge">VS</div>
+
+        <div class="team">
+            <div class="team-logo">
+                <span style="font-size: 50px;">✈️</span>
+            </div>
+            <div class="team-name" th:text="${event != null ? event.visitorTeam : 'VISITOR TEAM'}">VISITOR TEAM</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div>📍 <strong><span th:text="${event != null ? event.location : 'TBD'}">LOCATION</span></strong></div>
+    </div>
+</div>
+</body>
+</html>
