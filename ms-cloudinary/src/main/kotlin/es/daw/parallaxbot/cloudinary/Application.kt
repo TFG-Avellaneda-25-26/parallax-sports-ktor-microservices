@@ -17,10 +17,16 @@ import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 import org.slf4j.LoggerFactory
 
+/**
+ * Cloudinary microservice entrypoint.
+ */
 fun main(args: Array<String>) {
     EngineMain.main(args)
 }
 
+/**
+ * Configures DI, JSON serialization, route registration, and shutdown logging.
+ */
 fun Application.module() {
     val logger = LoggerFactory.getLogger("Application")
 

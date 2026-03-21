@@ -7,6 +7,9 @@ import es.daw.parallaxbot.common.config.DiscordConfig
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
+/**
+ * Registers Discord slash commands and exposes them as command contract list.
+ */
 val commandModule = module {
     single { LoginCommand(get<DiscordConfig>().authApiUrl) }
     singleOf(::EventsCommand)

@@ -1,8 +1,12 @@
 package es.daw.parallaxbot.common.config
 
 import io.ktor.server.config.ApplicationConfig
+import io.lettuce.core.RedisClient
 import org.koin.dsl.module
 
+/**
+ * Provides Discord runtime configuration from application properties.
+ */
 val discordConfigModule = module {
     single {
         val config = get<ApplicationConfig>()
@@ -17,6 +21,9 @@ val discordConfigModule = module {
     }
 }
 
+/**
+ * Provides Telegram runtime configuration from application properties.
+ */
 val telegramConfigModule = module {
     single {
         val config = get<ApplicationConfig>()
@@ -27,6 +34,9 @@ val telegramConfigModule = module {
     }
 }
 
+/**
+ * Provides Playwright runtime configuration from application properties.
+ */
 val playwrightConfigModule = module {
     single {
         val config = get<ApplicationConfig>()
@@ -38,12 +48,22 @@ val playwrightConfigModule = module {
     }
 }
 
+/**
+ * Reserved email module slot for parity with other provider modules.
+ */
 val emailConfigModule = module {
     single {
-
+        val config = get<ApplicationConfig>()
+        MailConfig(
+            username = config.property("parallaxbot.email.username").getString(),
+            from = config.property("parallaxbot.email.from").getString(),
+        )
     }
 }
 
+/**
+ * Provides Cloudinary credentials and tenant settings from application properties.
+ */
 val cloudinaryConfigModule = module {
     single {
         val config = get<ApplicationConfig>()
@@ -52,5 +72,17 @@ val cloudinaryConfigModule = module {
             apiKey = config.property("parallaxbot.cloudinary.apiKey").getString(),
             apiSecret = config.property("parallaxbot.cloudinary.apiSecret").getString(),
         )
+    }
+}
+
+/**
+ * Creates a singleton Redis client using the configured connection URL.
+ */
+val redisModule = module {
+    single {
+        val config = get<ApplicationConfig>()
+        val redisUrl = config.property("parallaxbot.redis.url").getString()
+
+        RedisClient.create(redisUrl)
     }
 }

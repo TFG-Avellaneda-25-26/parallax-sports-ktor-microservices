@@ -11,6 +11,11 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
+/**
+ * Sends account-linking messages for Telegram users.
+ *
+ * Current implementation uses a temporary fixed URL while auth-link generation is pending.
+ */
 class LoginCommand(private val authApiUrl: String) : ITelegramCommand {
 
     override val name: String = "login"
@@ -18,6 +23,13 @@ class LoginCommand(private val authApiUrl: String) : ITelegramCommand {
 
     private val logger: Logger = LoggerFactory.getLogger(LoginCommand::class.java)
 
+    /**
+     * Sends an inline button with account-linking URL for the requesting Telegram user.
+     *
+     * @param bot Telegram bot instance used to send responses.
+     * @param message source message containing user and chat context.
+     * @param args command argument list (unused for login flow).
+     */
     override suspend fun execute(bot: Bot, message: Message, args: List<String>) {
         val chatId = ChatId.fromId(message.chat.id)
 

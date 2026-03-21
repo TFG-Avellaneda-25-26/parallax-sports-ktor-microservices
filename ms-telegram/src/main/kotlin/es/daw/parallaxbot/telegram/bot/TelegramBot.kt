@@ -9,6 +9,13 @@ import com.github.kotlintelegrambot.entities.BotCommand
 import es.daw.parallaxbot.common.config.TelegramConfig
 import org.slf4j.LoggerFactory
 
+/**
+ * Builds and starts the Telegram bot polling loop with dynamic command dispatch.
+ *
+ * @param config Telegram bot credentials and endpoint configuration.
+ * @param dispatcher command dispatcher used by command handlers.
+ * @return started bot instance.
+ */
 fun configureTelegramBot(
     config: TelegramConfig,
     dispatcher: TelegramDispatcher

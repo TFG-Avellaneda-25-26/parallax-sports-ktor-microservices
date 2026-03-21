@@ -7,6 +7,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
+/**
+ * Issues one-time account-linking URLs for Discord users.
+ */
 class LoginCommand(private val authApiUrl: String) : ICommand {
 
     override val name: String = "login"
@@ -14,6 +17,11 @@ class LoginCommand(private val authApiUrl: String) : ICommand {
 
     val logger: Logger = LoggerFactory.getLogger(LoginCommand::class.java)
 
+    /**
+     * Generates a login token and replies with an ephemeral account-linking embed.
+     *
+     * @param event slash command interaction containing the requesting Discord user.
+     */
     override suspend fun execute(event: SlashCommandInteractionEvent) {
         try {
             event.deferReply(true).queue()

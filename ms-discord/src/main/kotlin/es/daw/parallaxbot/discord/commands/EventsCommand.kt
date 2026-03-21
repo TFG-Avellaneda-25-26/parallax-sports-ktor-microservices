@@ -8,12 +8,20 @@ import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import java.time.ZoneId
 
+/**
+ * Lists upcoming events grouped by league type.
+ */
 class EventsCommand(private val discordService: DiscordService) : ICommand {
 
     override val name: String = "events"
     override val description: String = "List upcoming events"
     override val options = listOf(CommandOptions.leagueType)
 
+    /**
+     * Fetches events by type and responds with one or more embeds.
+     *
+     * @param event slash command interaction containing optional type filter.
+     */
     override suspend fun execute(event: SlashCommandInteractionEvent) {
         event.deferReply(false).queue()
 
@@ -33,14 +41,14 @@ class EventsCommand(private val discordService: DiscordService) : ICommand {
             groupedEvents.forEach { (type, list) ->
                 val embed = EmbedFactory.leagueSchedule(type)
 
-                    list.forEach { item ->
-                        val unixTime = item.dateTime.atZone(ZoneId.systemDefault()).toEpochSecond()
-                        embed.addField(
-                            "Event date",
-                            "<t:$unixTime:F>",
-                            false
-                        )
-                    }
+//                    list.forEach { item ->
+//                        val unixTime = item.atZone(ZoneId.systemDefault()).toEpochSecond()
+//                        embed.addField(
+//                            "Event date",
+//                            "<t:$unixTime:F>",
+//                            false
+//                        )
+//                    }
                 embedGroup.add(embed.build())
             }
 

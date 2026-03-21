@@ -1,6 +1,4 @@
 val kotlinVersion = rootProject.extra["kotlinVersion"] as String
-val logbackVersion = rootProject.extra["logbackVersion"] as String
-val koinVersion = rootProject.extra["koinVersion"] as String
 
 plugins {
     kotlin("jvm") version "2.3.0"
@@ -26,14 +24,12 @@ dependencies {
 //
     implementation("net.dv8tion:JDA:6.3.1")
 //
-    implementation("io.insert-koin:koin-ktor:$koinVersion")
-    implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
-    implementation("io.insert-koin:koin-core:${koinVersion}")
-//
-    implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("io.ktor:ktor-server-content-negotiation-jvm")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm")
     implementation("io.ktor:ktor-serialization-gson:3.4.1")
+
+    implementation("io.lettuce:lettuce-core:7.5.0.RELEASE")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 }
 
 kotlin {

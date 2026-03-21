@@ -26,6 +26,9 @@ import io.ktor.server.routing.routing
 import org.koin.ktor.ext.inject
 import org.slf4j.LoggerFactory
 
+/**
+ * Registers Playwright internal routes used to generate or resolve event screenshot artifacts.
+ */
 fun Application.configureRouting() {
     val playwrightService by inject<PlaywrightService>()
     val httpClient by inject<HttpClient>()
@@ -33,35 +36,41 @@ fun Application.configureRouting() {
     val logger = LoggerFactory.getLogger("Routing")
 
     routing {
-        post("/get-event-image") {
+                /*============================================================
+                    SCREENSHOT ORCHESTRATION
+                    Validate request, resolve event data, generate image, upload artifact
+                ============================================================*/
+        post("/api/internal/screenshot") {
             try {
-                val event = call.receive<EventDTO>()
-                val eventId = event.id.toString()
+                val request = call.receive<Map<String, Long>>()
+                val eventId = request["eventId"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing eventId")
+
+                logger.info("Requesting screenshot for eventId: $eventId")
 
                 val check = httpClient.get("http://localhost:8085/check/$eventId").body<CloudinaryCheckResponse>()
 
                 if (check.exists && check.url != null) {
                     return@post call.respond(
                         HttpStatusCode.OK,
-                        PlaywrightResponse(
-                            check.url!!,
-                            eventId,
-                            true
-                        )
+                        PlaywrightResponse(success = true, url = check.url)
                     )
                 }
 
-                val imageBytes = playwrightService.generateEventImage(event)
+                val eventResponse = httpClient.get("http://localhost:8080/api/events/$eventId")
+
+                if (!eventResponse.status.isSuccess()) {
+                    return@post call.respond(HttpStatusCode.NotFound, PlaywrightResponse(success = false, errorMessage = "Could not find event with id: $eventId"))
+                }
+
+                val eventDto = httpClient.get("http://localhost:8080/api/internal/events/$eventId").body<EventDTO>()
+                val imageBytes = playwrightService.generateEventImage(eventDto)
 
                 if (imageBytes.isEmpty()) {
-                    logger.error("Empty image for event: $eventId")
-                    return@post call.respond(
-                        HttpStatusCode.InternalServerError,
-                        mapOf("error" to "Failed to render event image")
-                    )
+                    return@post call.respond(HttpStatusCode.InternalServerError,
+                        PlaywrightResponse(success = false, errorMessage = "Could not find image with id: $eventId"))
                 }
 
-                val response = httpClient.post("http://localhost:8085/upload") {
+                val uploadResponse = httpClient.post("http://ms-cloudinary:8085/upload") {
                     contentType(ContentType.MultiPart.FormData)
                     setBody(MultiPartFormDataContent(formData {
                         append("file", imageBytes, Headers.build {
@@ -72,18 +81,21 @@ fun Application.configureRouting() {
                     }))
                 }
 
-                if (!response.status.isSuccess()) {
-                    logger.error("Failed to upload image: ${response.status.description}")
-                    call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to upload image to cloudinary"))
+                if (!uploadResponse.status.isSuccess()) {
+                    return@post call.respond(
+                        HttpStatusCode.InternalServerError,
+                        PlaywrightResponse(success = false, errorMessage = "Could not upload image with id: $eventId")
+                    )
                 }
 
-                val cloudUrl = response.body<UploadResponse>().url
-                logger.info("Image uploaded: $cloudUrl")
-                call.respond(HttpStatusCode.OK, PlaywrightResponse(cloudUrl, eventId, false))
+                val finalUrl = uploadResponse.body<UploadResponse>().url
 
+                call.respond(HttpStatusCode.OK, PlaywrightResponse(success = true, url = finalUrl))
             } catch (e: Exception) {
-                logger.error("Error in Playwright routing: ${e.message}")
-                call.respond(HttpStatusCode.InternalServerError, e)
+                logger.error("Error in Playwright API: ${e.message}")
+                call.respond(HttpStatusCode.InternalServerError,
+                    PlaywrightResponse(success = false, errorMessage = e.message)
+                )
             }
         }
     }
