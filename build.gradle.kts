@@ -37,5 +37,18 @@ allprojects {
     }
 }
 
+subprojects {
+
+    apply(plugin = "org.jetbrains.kotlin.jvm")
+    apply(plugin = "org.jetbrains.kotlin.plugin.serialization")
+
+    dependencies {
+        add("implementation", "io.insert-koin:koin-core:${koinVersion}")
+        add("implementation", "io.insert-koin:koin-ktor:${koinVersion}")
+        add("implementation", "io.insert-koin:koin-logger-slf4j:${ktorVersion}")
+        add("implementation","ch.qos.logback:logback-classic:${logbackVersion}")
+    }
+}
+
 
 

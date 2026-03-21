@@ -1,5 +1,3 @@
-val koinVersion = rootProject.extra["koinVersion"] as String
-val logbackVersion = rootProject.extra["logbackVersion"] as String
 val ktorVersion = rootProject.extra["ktorVersion"] as String
 
 plugins {
@@ -23,15 +21,12 @@ dependencies {
     implementation("io.ktor:ktor-server-core-jvm")
     implementation("io.ktor:ktor-server-netty-jvm")
 
+    implementation("io.lettuce:lettuce-core:7.5.0.RELEASE")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+
     implementation("com.github.kotlin-telegram-bot:kotlin-telegram-bot:6.2.0") {
         exclude(module = "webhook")
     }
-
-    implementation("io.insert-koin:koin-ktor:${koinVersion}")
-    implementation("io.insert-koin:koin-logger-slf4j:${koinVersion}")
-    implementation("io.insert-koin:koin-core:${koinVersion}")
-
-    implementation("ch.qos.logback:logback-classic:${logbackVersion}")
 }
 
 kotlin {

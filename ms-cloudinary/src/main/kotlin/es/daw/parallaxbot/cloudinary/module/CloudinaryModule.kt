@@ -7,6 +7,9 @@ import es.daw.parallaxbot.common.config.networkModule
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
+/**
+ * Wires Cloudinary client factory, service, and shared network/config modules.
+ */
 val cloudinaryModule = module {
     singleOf(::configureCloudinary)
     singleOf(::CloudinaryService)

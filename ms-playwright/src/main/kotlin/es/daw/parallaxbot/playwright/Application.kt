@@ -12,10 +12,16 @@ import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 import org.slf4j.LoggerFactory
 
+/**
+ * Playwright microservice entrypoint.
+ */
 fun main(args: Array<String>) {
     EngineMain.main(args)
 }
 
+/**
+ * Configures DI, internal screenshot routing, and browser resource shutdown.
+ */
 fun Application.module() {
     val logger = LoggerFactory.getLogger("Application")
 

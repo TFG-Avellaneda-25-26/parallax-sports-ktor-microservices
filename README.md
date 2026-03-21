@@ -25,6 +25,10 @@ Here's a list of features included in this project:
 
 ## Building & Running
 
+## Documentation
+
+- [AI Code Documentation Guidelines](./AI_CODE_DOCUMENTATION_GUIDELINES.md)
+
 To build or run the project, use one of the following tasks:
 
 | Task                                    | Description                                                          |
