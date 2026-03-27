@@ -3,7 +3,7 @@ package es.daw.parallaxbot.common.dto
 import kotlinx.serialization.Serializable
 
 /**
- * Response payload returned by Playwright screenshot orchestration endpoint.
+ * Response contract returned by screenshot orchestration endpoint.
  */
 @Serializable
 data class PlaywrightResponse(

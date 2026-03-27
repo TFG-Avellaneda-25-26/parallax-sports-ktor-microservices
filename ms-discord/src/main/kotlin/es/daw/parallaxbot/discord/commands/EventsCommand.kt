@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import java.time.ZoneId
 
 /**
- * Lists upcoming events grouped by league type.
+ * Slash command that retrieves upcoming events and renders grouped schedule embeds.
  */
 class EventsCommand(private val discordService: DiscordService) : ICommand {
 
@@ -17,11 +17,7 @@ class EventsCommand(private val discordService: DiscordService) : ICommand {
     override val description: String = "List upcoming events"
     override val options = listOf(CommandOptions.leagueType)
 
-    /**
-     * Fetches events by type and responds with one or more embeds.
-     *
-     * @param event slash command interaction containing optional type filter.
-     */
+    // -> Source: Discord Slash /events || Action: Fetch events and send grouped embeds || Strategy: immediate empty-state response and chunked embed publish
     override suspend fun execute(event: SlashCommandInteractionEvent) {
         event.deferReply(false).queue()
 

@@ -5,11 +5,10 @@ import com.cloudinary.utils.ObjectUtils
 import es.daw.parallaxbot.common.config.CloudinaryConfig
 
 /**
- * Builds a configured Cloudinary client instance from application credentials.
- *
- * @param config Cloudinary tenant credentials.
- * @return initialized Cloudinary client configured for secure URLs.
+ * Builds the Cloudinary SDK client using configured credentials.
  */
+// -> Source: Service Startup || Action: Create Cloudinary SDK singleton || Strategy: secure transport enabled for all provider requests
+// -> API: Cloudinary REST API || Auth: API Key + Secret || Scope: image upload and resource lookup
 fun configureCloudinary(config: CloudinaryConfig) : Cloudinary {
     return Cloudinary(ObjectUtils.asMap(
         "cloud_name", config.cloudName,

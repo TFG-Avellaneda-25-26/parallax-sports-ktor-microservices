@@ -8,7 +8,7 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 /**
- * Wires Cloudinary client factory, service, and shared network/config modules.
+ * Dependency graph for Cloudinary microservice provider client and service operations.
  */
 val cloudinaryModule = module {
     singleOf(::configureCloudinary)

@@ -9,11 +9,10 @@ import org.koin.dsl.module
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
-import io.ktor.http.headers
 import io.ktor.server.config.ApplicationConfig
 
 /**
- * Provides a shared HTTP client with JSON serialization and API key propagation.
+ * Shared outbound HTTP client configuration for internal service-to-service calls.
  */
 val networkModule = module {
     single {
@@ -21,6 +20,7 @@ val networkModule = module {
         val config = get<ApplicationConfig>()
         val apiKey = config.property("parallaxbot.api.key").getString()
 
+        // -> Source: Service Startup || Action: Build reusable CIO HttpClient singleton || Strategy: pooled connections with content negotiation and bounded endpoint limits
         HttpClient(CIO) {
             install(ContentNegotiation) {
                 json(Json {
@@ -30,9 +30,9 @@ val networkModule = module {
                 })
             }
 
-            defaultRequest {
-                header("X-Api-Key", apiKey)
-            }
+//            defaultRequest {
+//                header("X-Api-Key", apiKey)
+//            }
 
             engine {
                 maxConnectionsCount = 1000

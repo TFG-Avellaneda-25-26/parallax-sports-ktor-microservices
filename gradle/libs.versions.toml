@@ -1,0 +1,58 @@
+[versions]
+
+kotlin = "2.3.20"
+ktor = "3.4.1"
+serialization = "2.3.20"
+coroutines = "1.10.2"
+analysis = "3.5.1"
+
+jda = "6.3.1"
+telegram = "6.2.0"
+koin = "4.1.1"
+lettuce = "7.5.0.RELEASE"
+cloudinary = "2.3.2"
+google = "2.9.0"
+gmail = "v1-rev20260112-2.0.0"
+angus = "2.0.5"
+playwright = "1.58.0"
+logback = "1.5.6"
+
+[libraries]
+ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm", version.ref = "ktor" }
+ktor-server-thymeleaf = { module = "io.ktor:ktor-server-thymeleaf-jvm", version.ref = "ktor" }
+
+ktor-client-cio = { module = "io.ktor:ktor-client-cio-jvm", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation-jvm", version.ref = "ktor" }
+
+ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json-jvm", version.ref = "ktor" }
+ktor-serialization-gson = { module = "io.ktor:ktor-serialization-gson", version.ref = "ktor" }
+
+kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines"}
+
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
+koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
+
+redis-lettuce = { module = "io.lettuce:lettuce-core", version.ref = "lettuce" }
+
+cloudinary = { module = "com.cloudinary:cloudinary-http5", version.ref = "cloudinary" }
+
+google-api-client = { module = "com.google.api-client:google-api-client", version.ref = "google"}
+google-api-service-gmail = { module = "com.google.apis:google-api-services-gmail", version.ref = "gmail" }
+
+jakarta-mail-angus = { module = "org.eclipse.angus:jakarta.mail", version.ref = "angus" }
+
+playwright = { module = "com.microsoft.playwright:playwright", version.ref = "playwright" }
+
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+jda = { module = "net.dv8tion:JDA", version.ref = "jda" }
+telegram = { module = "com.github.kotlin-telegram-bot:kotlin-telegram-bot", version.ref = "telegram" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "serialization" }
+dependency-analysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "analysis" }

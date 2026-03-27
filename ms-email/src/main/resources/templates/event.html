@@ -1,10 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
+<html>
 <body>
-$END$
+<h1>¡Nueva Alerta de Evento!</h1>
+<p>Evento: <span th:text="${event.eventName}">Nombre del evento</span></p>
+<p>Tipo: <span th:text="${event.eventType}">Tipo</span></p>
+<p>Comienza a las: <span th:text="${event.eventStartTimeUtc}">Fecha</span></p>
+
+<div th:if="${event.competitionName}">
+  <p>Competición: <span th:text="${event.competitionName}">Liga</span></p>
+</div>
+
+<p>ID de Alerta: <span th:text="${event.alertId}">000</span></p>
 </body>
 </html>

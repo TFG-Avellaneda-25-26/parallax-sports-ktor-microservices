@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory
 /**
  * Playwright microservice entrypoint.
  */
+// -> Triggers: JVM service startup for ms-playwright || Contract: boots Ktor Netty engine
 fun main(args: Array<String>) {
     EngineMain.main(args)
 }
@@ -22,6 +23,7 @@ fun main(args: Array<String>) {
 /**
  * Configures DI, internal screenshot routing, and browser resource shutdown.
  */
+// -> Triggers: Ktor application initialization || Contract: wires DI, registers screenshot route, and closes browser resources on shutdown
 fun Application.module() {
     val logger = LoggerFactory.getLogger("Application")
 

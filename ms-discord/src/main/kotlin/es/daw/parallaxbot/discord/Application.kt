@@ -7,10 +7,10 @@ import es.daw.parallaxbot.discord.service.DiscordAlertConsumer
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import net.dv8tion.jda.api.JDA
 import org.koin.core.logger.Level
 import org.koin.dsl.module
@@ -21,22 +21,22 @@ import org.koin.ktor.ext.inject
 /**
  * Discord microservice entrypoint.
  */
+// -> Source: JVM Startup || Action: Boot Ktor Netty application for Discord service || Strategy: fail-fast on startup exceptions
 fun main(args: Array<String>) {
     EngineMain.main(args)
 }
 
 /**
- * Configures serialization, dependency injection, HTTP routes, and Redis consumer lifecycle.
+ * Configures serialization, dependency injection, Discord bot runtime, and stream consumer lifecycle.
  */
+// -> Source: Ktor Application Init || Action: Wire modules and start Discord worker loop || Strategy: coroutine-based startup with graceful shutdown hooks
 fun Application.module() {
-
     install(ContentNegotiation) {
         json(Json {
             ignoreUnknownKeys = true
             prettyPrint = true
             isLenient = true
         })
-
     }
     val logger = LoggerFactory.getLogger("Application")
 

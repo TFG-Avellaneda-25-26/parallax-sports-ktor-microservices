@@ -1,139 +1,72 @@
-# AI Code Documentation Guidelines
+AI Code Documentation Guidelines (Parallax Project)
+This document establishes the standards for AI-assisted and manual documentation. The goal is to ensure high-signal, low-noise comments for an event-driven microservices architecture.
 
-This note is a project-specific guide for AI-assisted code documentation.
-Use it to produce consistent, useful, low-noise comments.
+1. The Core Mission
+"Document the data flow and side effects, not the Kotlin syntax."
 
-## 1. Goal
+2. Document Architecture
+2.1 Section Banners (Grouping)
+Use decorated banners to partition logic within a file (e.g., separating Authentication, Stream Processing, and Private Helpers).
 
-Documentation must answer, quickly:
-
-1. What this code does.
-2. When it triggers.
-3. What contract it returns or enforces.
-4. Why this behavior exists (only when not obvious).
-
-Write for maintainers who did not author the code.
-
-## 2. Non-Negotiable Principles
-
-1. Clarity over cleverness.
-2. Intent over implementation narration.
-3. Contract over internal trivia.
-4. Stable wording over noisy, changing details.
-5. Keep comments synchronized with behavior changes.
-
-## 3. Preferred Comment Architecture
-
-Use all three layers in medium/large classes.
-
-### 3.1 Section banners (grouping)
-
-Use multiline decorated banners to partition related logic.
-
-```java
+Kotlin
 /*============================================================
-  VALIDATION EXCEPTIONS
-  Bean validation and request parsing failures
+  REDIS STREAM CONSUMPTION
+  Logic for fetching, processing, and ACK of stream messages
 ============================================================*/
-```
+2.2 Scanner Line (Required for Handlers)
+Every function that interacts with infrastructure (Redis, Discord, Gmail, Spring Callback) must have a one-line scanner comment.
+Format: // -> Source: <Origin> || Action: <Side Effect> || Strategy: <Retry/Drop/Ack>
 
-### 3.2 Scanner line before handlers
+Examples:
 
-Required for exception handlers.
+// -> Source: Redis Stream || Action: Send Gmail Alert || Strategy: Retry on 5xx
 
-Format:
+// -> Source: HTTP Post || Action: Refresh OAuth2 Token || Strategy: TTL 55m
 
-```java
-// -> Triggers: <concise trigger> || Returns: <Status Name> (<code>)
-```
+2.3 Ktor & API Contracts
+For external API calls (Google/Discord/Spring):
+// -> API: <Endpoint> || Auth: <Type> || Scope: <Permission>
 
-Example:
+3. Style Rules (Strict)
+Domain Vocabulary: Use specific terms like Stream, Consumer Group, Artifact, Embed, Idempotency, TTL.
 
-```java
-// -> Triggers: malformed JSON / unreadable body || Returns: Bad Request (400)
-```
+Active Voice & Intent: Avoid "This loop iterates...". Use "Dispatches each pending alert to the provider."
 
-### 3.3 Javadoc for methods
+Coroutines & Nullability: * State why a method returns null (e.g., "Returns null if Discord channel ID is invalid").
 
-Use Javadoc for public methods and non-trivial private helpers.
+Clarify if a suspend function has specific Dispatcher requirements.
 
-Minimum shape:
+No Code Narration: Do not explain standard Kotlin features (e.g., apply, let, map).
 
-```java
+4. Specific Standards
+4.1 Redis Stream Consumers
+Every class extending RedisStreamConsumer must include a header defining its topology:
+
+Kotlin
 /**
- * One-line purpose with domain meaning.
- *
- * @param x what matters about this input
- * @param y what matters about this input
- * @return contract-level output
+ * [Worker Name]
+ * * Stream: [stream.name.v1]
+ * Group:  [group-name]
+ * Role:   [Brief description of what this worker achieves]
  */
-```
+4.2 Javadoc Quality Bar
+Minimum shape for public methods:
 
-## 4. Style Rules (strict)
+Kotlin
+/**
+ * One-line purpose using domain meaning.
+ * * @param x description of impact on behavior
+ * @return contract-level output (e.g., Google Message ID)
+ * @throws Exception category of failure (e.g., Network, Auth)
+ */
+5. What NOT to Document (Noise)
+Obvious Control Flow: if/else logic that is readable at a glance.
 
-Direct, explicit, concise. Active voice. Domain vocabulary only. No vague terms ("stuff", "things", "some logic"). No jokes in permanent docs. Avoid repeating the method name in sentence form.
+Dependency Injection: Do not document constructor parameters injected by Koin unless they have non-obvious configurations.
 
-## 5. AI Workflow: How to Document a File
+Logger implementation: Avoid // Logging error before a logger.error() call.
 
-When an AI updates documentation, follow this sequence:
+Standard Library: No comments explaining java.util.Base64 or kotlinx.serialization.
 
-1. Detect responsibilities in the class.
-2. Group methods into meaningful sections.
-3. Add/normalize section banners.
-4. For each handler, add scanner trigger/status line.
-5. Add or tighten Javadoc with purpose, params that affect behavior, return contract, and throws only when part of the contract.
-6. Remove filler comments that restate obvious syntax.
-7. Validate that comments still match behavior.
-
-## 6. What to Document
-
-1. Business intent of methods.
-2. Input conditions that change behavior.
-3. Output contract (status, payload shape, side effects).
-4. Security-sensitive constraints.
-5. Observability behavior (structured logs, metrics tags).
-
-## 7. What Not to Document
-
-1. Obvious control flow.
-2. Java syntax semantics.
-3. Temporary implementation detail likely to churn.
-4. Comments with no actionable meaning.
-
-## 8. Exception Handler Documentation Standard
-
-For each `@ExceptionHandler`:
-
-1. Add scanner line in this exact format: `// -> Triggers: ... || Returns: Name (code)`.
-2. Add Javadoc that states failure category, key params (`ex`, `request`), and response contract (`ProblemDetail`, status).
-3. Keep user-facing messages safe (no secrets/internal traces).
-4. Ensure status mapping is explicit and stable.
-
-## 9. Javadoc Quality Bar
-
-Good Javadoc is:
-
-1. Specific to domain behavior.
-2. Short (usually 1-3 lines of description).
-3. Focused on contract, not line-by-line mechanics.
-4. Updated when method behavior changes.
-
-Bad Javadoc examples:
-
-1. "This method handles exceptions".
-2. "Sets variable value".
-3. Copy-paste text that does not match current logic.
-
-## 10. Presentation Improvements AI Should Apply
-
-When possible, AI should improve readability by:
-
-1. Ordering sections from external contract to internal helpers.
-2. Keeping consistent wording across similar handlers.
-3. Using one terminology set (`request body`, `validation`, `conflict`, etc.).
-4. Keeping scanner comments parallel in shape for quick visual parsing.
-
-## 11. Maintenance Rule
-
-If behavior changes, update related comments in the same commit.
-If code and comment diverge, fix the comment immediately.
+6. Maintenance Rule
+If the code behavior changes (e.g., switching from a Hash to a String in Redis), update the comments in the same commit. Documentation and code must never diverge.

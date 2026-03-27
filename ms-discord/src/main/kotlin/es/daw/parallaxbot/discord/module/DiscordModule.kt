@@ -16,7 +16,7 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 /**
- * Wires Discord runtime dependencies, bot lifecycle, and alert consumer pipeline.
+ * Dependency graph for Discord bot runtime, provider service, and Redis alert worker.
  */
 val discordModule = module {
     single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
