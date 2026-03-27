@@ -3,7 +3,7 @@ package es.daw.parallaxbot.common.dto
 import kotlinx.serialization.Serializable
 
 /**
- * Notification request payload used by provider-facing endpoints.
+ * Generic notification request carrying event label and optional artifact URL.
  */
 @Serializable
 data class NotificationRequest(

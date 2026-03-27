@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory
 /**
  * Registers Playwright internal routes used to generate or resolve event screenshot artifacts.
  */
+// -> Triggers: Ktor route registration at service startup || Contract: exposes screenshot orchestration endpoint
 fun Application.configureRouting() {
     val playwrightService by inject<PlaywrightService>()
     val httpClient by inject<HttpClient>()
@@ -40,6 +41,7 @@ fun Application.configureRouting() {
                     SCREENSHOT ORCHESTRATION
                     Validate request, resolve event data, generate image, upload artifact
                 ============================================================*/
+        // -> Triggers: POST /api/internal/screenshot || Contract: returns PlaywrightResponse (200/400/404/500)
         post("/api/internal/screenshot") {
             try {
                 val request = call.receive<Map<String, Long>>()
@@ -70,7 +72,7 @@ fun Application.configureRouting() {
                         PlaywrightResponse(success = false, errorMessage = "Could not find image with id: $eventId"))
                 }
 
-                val uploadResponse = httpClient.post("http://ms-cloudinary:8085/upload") {
+                val uploadResponse = httpClient.post("http://localhost:8085/upload") {
                     contentType(ContentType.MultiPart.FormData)
                     setBody(MultiPartFormDataContent(formData {
                         append("file", imageBytes, Headers.build {

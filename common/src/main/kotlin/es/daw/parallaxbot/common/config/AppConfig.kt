@@ -1,7 +1,7 @@
 package es.daw.parallaxbot.common.config
 
 /**
- * Discord transport and upstream endpoint configuration.
+ * Discord provider settings used by bot and API integrations.
  */
 data class DiscordConfig(
     val serverId: String,
@@ -13,7 +13,7 @@ data class DiscordConfig(
 )
 
 /**
- * Playwright capture-service and provider configuration.
+ * Playwright integration settings for event retrieval and provider routing.
  */
 data class PlaywrightConfig(
     val eventApiUrl: String,
@@ -22,7 +22,7 @@ data class PlaywrightConfig(
 )
 
 /**
- * Telegram bot credentials and auth endpoint configuration.
+ * Telegram provider settings for bot auth and external auth callback path.
  */
 data class TelegramConfig(
     val token: String,
@@ -30,15 +30,17 @@ data class TelegramConfig(
 )
 
 /**
- * Mail sender identity configuration.
+ * Email provider and OAuth client settings used by Gmail token flows.
  */
-data class MailConfig(
+data class EmailConfig(
+    val clientId: String,
+    val clientSecret: String,
     val username: String,
     val from: String,
 )
 
 /**
- * Cloudinary credentials used for artifact storage.
+ * Cloudinary credentials used for image upload and lookup operations.
  */
 data class CloudinaryConfig(
     val cloudName: String,

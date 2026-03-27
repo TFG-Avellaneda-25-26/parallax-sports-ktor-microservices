@@ -3,7 +3,7 @@ package es.daw.parallaxbot.common.dto
 import kotlinx.serialization.Serializable
 
 /**
- * Response payload for image upload operations.
+ * Upload result contract returned by ms-cloudinary after artifact persistence.
  */
 @Serializable
 data class UploadResponse(

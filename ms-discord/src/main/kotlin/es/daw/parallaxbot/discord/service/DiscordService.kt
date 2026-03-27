@@ -10,14 +10,12 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.isSuccess
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.utils.FileUpload
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 
-
 /**
- * Coordinates Discord-facing operations for event retrieval and embed delivery.
+ * Discord provider service that fetches event data and sends rich embeds to configured guild channels.
  */
 class DiscordService(
     private val httpClient: HttpClient,
@@ -26,12 +24,8 @@ class DiscordService(
     private val logger = LoggerFactory.getLogger(DiscordService::class.java)
     private val jda: JDA by inject()
 
-    /**
-     * Retrieves upcoming events filtered by event type.
-     *
-     * @param eventType event category filter consumed by the upstream events API.
-     * @return list of events matching the filter; empty list when unavailable or request fails.
-     */
+    // -> Source: Slash Command /events || Action: Query event API by league type || Strategy: return empty list on HTTP or transport failures
+    // -> API: configured parallax event endpoint || Auth: internal API key strategy (configured client) || Scope: event list retrieval by type
     suspend fun fetchEventsByType(eventType: String): List<EventDTO> {
         return try {
             logger.info("Fetching events for type $eventType")
@@ -52,14 +46,7 @@ class DiscordService(
         }
     }
 
-
-    /**
-     * Sends one event embed to the configured Discord channel.
-     *
-     * @param message alert payload used to render embed content.
-     * @param artifactUrl optional screenshot URL attached to the embed.
-     * @return provider message ID when sent, or null when delivery fails.
-     */
+    // -> Source: Redis Stream Worker || Action: Publish event embed to configured Discord channel || Strategy: return null when channel/provider send fails
     fun sendEventEmbed(message: AlertStreamMessage, artifactUrl: String?): String? {
         return try {
             val channelId = discordConfig.channelId

@@ -33,6 +33,7 @@ class TelegramAlertConsumer(
      * @param artifactUrl optional screenshot/artifact URL generated for this alert.
      * @return provider message identifier when available.
      */
+    // -> Triggers: alert message ready for Telegram delivery || Contract: sends provider payload and returns provider message id
     override suspend fun sendToProvider(message: AlertStreamMessage, artifactUrl: String?): String? {
         return telegramService.sendEvent(message, artifactUrl).toString()
     }

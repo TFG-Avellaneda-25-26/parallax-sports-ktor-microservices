@@ -3,7 +3,7 @@ package es.daw.parallaxbot.common.dto
 import kotlinx.serialization.Serializable
 
 /**
- * Event payload contract shared across notification services.
+ * Event contract consumed by provider services and screenshot generation flow.
  */
 @Serializable
 data class EventDTO(

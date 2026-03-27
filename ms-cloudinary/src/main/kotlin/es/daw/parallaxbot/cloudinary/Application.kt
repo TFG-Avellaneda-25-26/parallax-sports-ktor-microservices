@@ -20,13 +20,15 @@ import org.slf4j.LoggerFactory
 /**
  * Cloudinary microservice entrypoint.
  */
+// -> Source: JVM Startup || Action: Boot Ktor Netty application for Cloudinary service || Strategy: fail-fast on startup exceptions
 fun main(args: Array<String>) {
     EngineMain.main(args)
 }
 
 /**
- * Configures DI, JSON serialization, route registration, and shutdown logging.
+ * Configures serialization, dependency injection, and route registration for Cloudinary operations.
  */
+// -> Source: Ktor Application Init || Action: Register DI modules and internal Cloudinary routes || Strategy: singleton wiring with graceful stop logging
 fun Application.module() {
     val logger = LoggerFactory.getLogger("Application")
 

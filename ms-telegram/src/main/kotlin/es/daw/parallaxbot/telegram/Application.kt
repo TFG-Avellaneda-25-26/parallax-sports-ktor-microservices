@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory
 /**
  * Telegram microservice entrypoint.
  */
+// -> Triggers: JVM service startup for ms-telegram || Contract: boots Ktor Netty engine
 fun main(args: Array<String>) {
     EngineMain.main(args)
 }
@@ -27,6 +28,7 @@ fun main(args: Array<String>) {
 /**
  * Configures dependency injection, starts bot runtime, and handles shutdown lifecycle.
  */
+// -> Triggers: Ktor application initialization || Contract: wires DI, starts Telegram consumer, registers graceful shutdown
 fun Application.module() {
 
     val logger = LoggerFactory.getLogger("Application")

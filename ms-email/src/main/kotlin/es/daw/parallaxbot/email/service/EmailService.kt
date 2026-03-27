@@ -1,101 +1,80 @@
 package es.daw.parallaxbot.email.service
 
-import com.google.api.services.gmail.Gmail
-import com.google.api.services.gmail.model.Message
 import es.daw.parallaxbot.common.dto.AlertStreamMessage
-import es.daw.parallaxbot.common.dto.EventDTO
-import jakarta.mail.Session
-import jakarta.mail.internet.InternetAddress
-import jakarta.mail.internet.MimeMessage
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import kotlinx.serialization.json.JsonObject
+import org.slf4j.LoggerFactory
+import org.thymeleaf.TemplateEngine
+import org.thymeleaf.context.Context
 import java.util.Base64
-import java.util.Properties
 
-/**
- * Delivers notification emails through the Gmail API.
- */
 class EmailService(
-    private val gmail: Gmail,
+    private val httpClient: HttpClient,
+    private val templateEngine: TemplateEngine
 ) {
 
-        /*============================================================
-            PUBLIC CONTRACT
-            Outbound email operations exposed to callers
-        ============================================================*/
+    private val logger = LoggerFactory.getLogger(EmailService::class.java)
 
-    /**
-         * Submits a notification email to Gmail using the provided OAuth access token.
-     *
-     * @param to recipient mailbox address.
-         * @param event event payload associated with this notification flow.
-         * @param imageUrl externally hosted image URL embedded in the HTML body.
-     * @param accessToken Gmail OAuth token scoped for send permissions.
-         * @return Unit after Gmail accepts the send request.
-     */
+    suspend fun sendEvent(message: AlertStreamMessage, accessToken: String): String? {
+        return try {
+            val context = Context().apply { setVariable("event", message) }
+            val htmlContent = templateEngine.process("event", context)
+            val to = "manueldl12062003@gmail.com"
 
-    suspend fun sendEventEmail(
-        to: String,
-        event: EventDTO,
-        imageUrl: String,
-        accessToken: String
-    ) = withContext(Dispatchers.IO) {
+            val googleMessageId = sendGmail(to, "Parallax event notification", htmlContent, accessToken)
 
-        val emailContent = createMimeMessage(to, event, imageUrl)
-
-        val buffer = ByteArrayOutputStream()
-        emailContent.writeTo(buffer)
-
-        val encodedEmail = Base64.getUrlEncoder().encodeToString(buffer.toByteArray())
-        val message = Message().setRaw(encodedEmail)
-
-        gmail.users().messages().send("me", message)
-            .setAccessToken(accessToken)
-            .execute()
-    }
-
-        /*============================================================
-            MESSAGE COMPOSITION
-            MIME payload construction for Gmail submission
-        ============================================================*/
-
-    /**
-         * Builds the HTML MIME message payload for one notification email.
-     *
-     * @param to recipient mailbox address.
-         * @param event event payload reserved for template enrichment in this flow.
-         * @param imageUrl event artifact URL rendered in the message body.
-     * @return MIME message ready for Gmail API submission.
-     */
-    private fun createMimeMessage(to: String, event: EventDTO, imageUrl: String): MimeMessage {
-        val session = Session.getDefaultInstance(Properties())
-        return MimeMessage(session).apply {
-            setFrom(InternetAddress("no-reply@parallaxbot.es"))
-            addRecipient(jakarta.mail.Message.RecipientType.TO, InternetAddress(to))
-            subject = "Event Alert: "
-
-            val htmlBody = """
-                <div style="font-family: sans-serif; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
-                    <h2 style="color: #1a73e8;">Notificación de ParallaxBot</h2>
-                    <img src="$imageUrl" style="width: 100%; max-width: 500px; border-radius: 4px; margin: 10px 0;">
-                    <a href="" style="color: #1a73e8;">Ver más detalles</a>
-                </div>
-            """.trimIndent()
-
-            setContent(htmlBody, "text/html; charset=utf-8")
+            logger.info("Parallax event notification sent")
+            googleMessageId
+        } catch (e: Exception) {
+            logger.error("Error while sending event: ${e.message}")
+            null
         }
     }
 
-    /**
-     * Placeholder stream entry point for Redis-driven email delivery.
-     *
-     * Current implementation is a no-op and exists only to keep the worker contract stable
-     * while email template mapping is completed.
-     *
-     * @param message alert stream event to be transformed into an email payload.
-     * @param artifactUrl optional artifact URL to embed in the notification.
-     * @return Unit.
-     */
-    fun sendEvent(message: AlertStreamMessage, artifactUrl: String?) {}
+    suspend fun sendVerificationEmail(to: String, verificationCode: String, token: String) {
+        try {
+            val context = Context().apply { setVariable("code", verificationCode) }
+            val htmlContent = templateEngine.process("verification", context)
+            sendGmail(to, "Parallax Account verification", htmlContent, token)
+            logger.info("Verification email sent")
+        } catch (e: Exception) {
+            logger.error("Error while sending verification email ${e.message}")
+        }
+    }
+
+    private suspend fun sendGmail(to: String, subject: String, htmlBody: String, token: String): String {
+        val headers = listOf(
+            "from: me",
+            "To: $to",
+            "Subject: $subject",
+            "MIME-Version: 1.0",
+            "Content-Type: text/html; charset=UTF-8"
+        ).joinToString("\r\n")
+
+        val rawMessage = "$headers\r\n\r\n$htmlBody"
+
+        val encodedEmail = Base64.getUrlEncoder().withoutPadding().encodeToString(rawMessage.toByteArray(Charsets.UTF_8))
+
+        val response = httpClient.post("https://gmail.googleapis.com/gmail/v1/users/me/messages/send") {
+            header("Authorization", "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(mapOf("raw" to encodedEmail))
+        }
+
+        logger.info("Google Response: ${response.status}")
+
+        return if (response.status.isSuccess()) {
+            val body = response.body<JsonObject>()
+            body["id"]?.toString()?.replace("\"", "") ?: "unknown-id"
+        } else {
+            throw Exception("Google API error: ${response.status}")
+        }
+    }
 }
