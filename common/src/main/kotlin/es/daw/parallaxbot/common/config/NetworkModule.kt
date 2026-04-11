@@ -7,7 +7,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.HttpRequestPipeline
 import io.ktor.client.request.header
 import io.ktor.server.config.ApplicationConfig
 
@@ -20,7 +20,8 @@ val networkModule = module {
         val config = get<ApplicationConfig>()
         val apiKey = config.property("parallaxbot.api.key").getString()
 
-        // -> Source: Service Startup || Action: Build reusable CIO HttpClient singleton || Strategy: pooled connections with content negotiation and bounded endpoint limits
+        val internalApiBase = config.property("parallaxbot.api.base-url").getString()
+
         HttpClient(CIO) {
             install(ContentNegotiation) {
                 json(Json {
@@ -30,9 +31,15 @@ val networkModule = module {
                 })
             }
 
-//            defaultRequest {
-//                header("X-Api-Key", apiKey)
-//            }
+            install("UrlBasedAuthPlugin") {
+                requestPipeline.intercept(HttpRequestPipeline.State) {
+                    val requestUrl = context.url.buildString()
+
+                    if (requestUrl.startsWith(internalApiBase)) {
+                        context.header("X-Api-Key", apiKey)
+                    }
+                }
+            }
 
             engine {
                 maxConnectionsCount = 1000
