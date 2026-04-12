@@ -36,7 +36,7 @@ val networkModule = module {
                     val requestUrl = context.url.buildString()
 
                     if (requestUrl.startsWith(internalApiBase)) {
-                        context.header("X-Api-Key", apiKey)
+                        context.header("X-Bot-Api-Key", apiKey)
                     }
                 }
             }
