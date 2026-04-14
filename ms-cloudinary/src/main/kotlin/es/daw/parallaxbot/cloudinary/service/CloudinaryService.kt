@@ -7,19 +7,18 @@ import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 
 /**
- * Manages Cloudinary artifact upload and lookup for event screenshot storage.
+ * Provider adapter for Cloudinary upload and resource lookup operations.
  */
 class CloudinaryService(private val cloudinary: Cloudinary) {
 
     private val logger = LoggerFactory.getLogger(CloudinaryService::class.java)
 
-    /**
-     * Uploads an event image and returns its secure URL.
-     *
-     * @param fileBytes image payload bytes.
-     * @param eventId stable event identifier used as Cloudinary public ID.
-     * @return secure asset URL when upload succeeds; null otherwise.
-     */
+        /*============================================================
+            CLOUDINARY WRITE OPERATIONS
+            Persist event artifacts and return canonical secure URL
+        ============================================================*/
+        // -> Source: Internal Upload Request || Action: Upload image bytes to Cloudinary folder || Strategy: IO dispatcher execution, return null on provider errors
+        // -> API: Cloudinary Upload API || Auth: API Key + Secret || Scope: image write/overwrite in parallaxbot/events
     suspend fun uploadImage(
         fileBytes: ByteArray,
         eventId: String
@@ -40,12 +39,12 @@ class CloudinaryService(private val cloudinary: Cloudinary) {
         }
     }
 
-    /**
-     * Retrieves an existing uploaded image URL for the given event.
-     *
-     * @param eventId event identifier used in Cloudinary public ID path.
-     * @return secure URL when asset exists; null when missing or lookup fails.
-     */
+    /*============================================================
+      CLOUDINARY READ OPERATIONS
+      Resolve existing artifact URL for idempotent screenshot flow
+    ============================================================*/
+    // -> Source: Internal Lookup Request || Action: Fetch existing Cloudinary resource URL || Strategy: IO dispatcher execution, return null when resource is absent or call fails
+    // -> API: Cloudinary Admin Resource API || Auth: API Key + Secret || Scope: image metadata lookup in parallaxbot/events
     suspend fun getExistingUrl(eventId: String): String? = withContext(Dispatchers.IO) {
         try {
             val resource = cloudinary.api().resource("parallaxbot/events/$eventId", ObjectUtils.emptyMap())

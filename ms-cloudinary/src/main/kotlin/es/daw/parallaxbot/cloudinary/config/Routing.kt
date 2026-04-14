@@ -16,15 +16,16 @@ import io.ktor.server.routing.routing
 import io.ktor.utils.io.readRemaining
 
 /**
- * Registers Cloudinary API routes for artifact existence checks and uploads.
- *
- * @param cloudinaryService service handling Cloudinary IO operations.
+ * Registers internal HTTP endpoints for Cloudinary artifact lookup and upload.
  */
+// -> Source: Ktor Routing Init || Action: Expose internal Cloudinary endpoints || Strategy: structured 200/400/500 response mapping
 fun Application.configureRouting(cloudinaryService: CloudinaryService) {
     routing {
-        /**
-         * Checks whether an event artifact already exists in Cloudinary.
-         */
+                /*============================================================
+                    ARTIFACT LOOKUP
+                    Resolve existing Cloudinary asset URL by event id
+                ============================================================*/
+                // -> Source: HTTP GET /check/{eventId} || Action: Read artifact metadata from Cloudinary-backed service || Strategy: return 400 on missing id, else 200 with existence contract
         get("/check/{eventId}") {
             val eventId = call.parameters["eventId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
 
@@ -40,9 +41,11 @@ fun Application.configureRouting(cloudinaryService: CloudinaryService) {
             )
         }
 
-        /**
-         * Uploads one event artifact image and returns persisted URL metadata.
-         */
+                /*============================================================
+                    ARTIFACT UPLOAD
+                    Parse multipart payload and persist image in Cloudinary
+                ============================================================*/
+                // -> Source: HTTP POST /upload || Action: Upload artifact bytes and return persisted URL || Strategy: validate multipart payload, return 400 on missing data, 500 on unexpected failures
         post("/upload") {
             try {
                 val multipart = call.receiveMultipart()

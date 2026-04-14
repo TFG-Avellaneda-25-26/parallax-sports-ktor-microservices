@@ -10,13 +10,9 @@ import org.slf4j.LoggerFactory
 private val logger: Logger = LoggerFactory.getLogger("ConfigureDiscordBot")
 
 /**
- * Builds and starts the JDA instance, then registers configured slash commands.
- *
- * @param listener listener that dispatches slash commands.
- * @param config Discord runtime configuration.
- * @param commands command implementations to register for the target guild.
- * @return ready-to-use JDA instance.
+ * Builds and initializes the JDA bot instance, then registers guild commands.
  */
+// -> Source: Service Startup || Action: Connect Discord bot and register slash commands || Strategy: awaitReady before guild command registration
 fun configureDiscordBot(
     listener: DiscordListener,
     config: DiscordConfig,
@@ -42,6 +38,7 @@ fun configureDiscordBot(
  * @param commands command implementations to expose.
  * @param serverId target guild where commands are updated.
  */
+// -> Source: Bot Initialization || Action: Upsert guild slash commands || Strategy: guild-scoped registration with warn log when guild is missing
 private fun JDA.registerCommands(commands: List<ICommand>, serverId: String) {
     val jdaCommands = commands.map { it.getCommandData() }
 

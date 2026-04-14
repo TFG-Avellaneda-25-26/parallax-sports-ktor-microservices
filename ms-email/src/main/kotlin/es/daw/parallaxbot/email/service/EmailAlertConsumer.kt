@@ -13,6 +13,7 @@ class EmailAlertConsumer(
     redisClient: RedisClient,
     playwrightClient: PlaywrightClient,
     springCallbackService: SpringCallbackService,
+    private val googleTokenManager: GoogleTokenManager,
     private val emailService: EmailService
 ): RedisStreamConsumer(
     redisClient, playwrightClient, springCallbackService,
@@ -33,7 +34,9 @@ class EmailAlertConsumer(
      * @param artifactUrl optional screenshot/artifact URL generated for this alert.
      * @return provider message identifier when available.
      */
+    // -> Triggers: alert message ready for email delivery || Contract: sends provider payload and returns provider message id
     override suspend fun sendToProvider(message: AlertStreamMessage, artifactUrl: String?): String? {
-        return emailService.sendEvent(message, artifactUrl).toString()
+        val token = googleTokenManager.getAccessToken()
+        return emailService.sendEvent(message, token)
     }
 }

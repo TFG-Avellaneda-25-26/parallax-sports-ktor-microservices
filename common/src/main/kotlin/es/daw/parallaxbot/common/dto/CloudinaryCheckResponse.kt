@@ -3,7 +3,7 @@ package es.daw.parallaxbot.common.dto
 import kotlinx.serialization.Serializable
 
 /**
- * Response contract for Cloudinary artifact existence checks.
+ * Artifact lookup response returned by ms-cloudinary for a given event identifier.
  */
 @Serializable
 data class CloudinaryCheckResponse(

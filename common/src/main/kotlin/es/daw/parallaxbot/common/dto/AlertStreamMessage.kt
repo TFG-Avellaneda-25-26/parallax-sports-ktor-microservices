@@ -1,7 +1,7 @@
 package es.daw.parallaxbot.common.dto
 
 /**
- * Canonical alert message consumed by worker channels from Redis streams.
+ * Canonical Redis stream payload consumed by channel workers.
  */
 data class AlertStreamMessage(
     val schemaVersion: String,
@@ -15,7 +15,6 @@ data class AlertStreamMessage(
     val maxAttempts: Int,
     val artifactRequired: Boolean,
     val artifactId: Long? = null,
-    // Optional
     val eventName: String? = null,
     val eventType: String? = null,
     val eventStatus: String? = null,

@@ -1,12 +1,10 @@
-package es.daw.parallaxbot.playwright.config
+package es.daw.parallaxbot.common.config
 
 import org.thymeleaf.TemplateEngine
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
 
 /**
- * Creates the template engine used to render event card HTML.
- *
- * @return template engine configured for classpath templates.
+ * Builds the Thymeleaf template engine used by services rendering HTML notifications.
  */
 fun configureEngine(): TemplateEngine {
     return TemplateEngine().apply {

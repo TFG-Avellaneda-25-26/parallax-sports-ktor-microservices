@@ -7,19 +7,20 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.HttpRequestPipeline
 import io.ktor.client.request.header
-import io.ktor.http.headers
 import io.ktor.server.config.ApplicationConfig
 
 /**
- * Provides a shared HTTP client with JSON serialization and API key propagation.
+ * Shared outbound HTTP client configuration for internal service-to-service calls.
  */
 val networkModule = module {
     single {
 
         val config = get<ApplicationConfig>()
         val apiKey = config.property("parallaxbot.api.key").getString()
+
+        val internalApiBase = config.property("parallaxbot.api.base-url").getString()
 
         HttpClient(CIO) {
             install(ContentNegotiation) {
@@ -30,8 +31,14 @@ val networkModule = module {
                 })
             }
 
-            defaultRequest {
-                header("X-Api-Key", apiKey)
+            install("UrlBasedAuthPlugin") {
+                requestPipeline.intercept(HttpRequestPipeline.State) {
+                    val requestUrl = context.url.buildString()
+
+                    if (requestUrl.startsWith(internalApiBase)) {
+                        context.header("X-Bot-Api-Key", apiKey)
+                    }
+                }
             }
 
             engine {

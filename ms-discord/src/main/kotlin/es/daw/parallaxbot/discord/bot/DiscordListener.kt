@@ -7,7 +7,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.LoggerFactory
 
 /**
- * Routes incoming slash interactions to command implementations using a coroutine scope.
+ * JDA listener that resolves slash command handlers and executes them in coroutine scope.
  */
 class DiscordListener(
     commandList: List<ICommand>,
@@ -17,11 +17,7 @@ class DiscordListener(
     private val commandList = commandList.associateBy { it.name }
     private val logger = LoggerFactory.getLogger(DiscordListener::class.java)
 
-    /**
-     * Dispatches slash command interactions to the matching command handler.
-     *
-     * @param event incoming slash command interaction.
-     */
+    // -> Source: Discord Slash Interaction || Action: Dispatch mapped command handler || Strategy: async execution with command-level exception logging
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
         val commandName = event.name
 

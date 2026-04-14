@@ -1,8 +1,8 @@
 package es.daw.parallaxbot.email
 
 import es.daw.parallaxbot.common.KoinLogger
-import es.daw.parallaxbot.common.config.networkModule
 import es.daw.parallaxbot.common.rootMessage
+import es.daw.parallaxbot.email.config.configureRouting
 import es.daw.parallaxbot.email.module.emailModule
 import es.daw.parallaxbot.email.service.EmailAlertConsumer
 import io.ktor.serialization.kotlinx.json.json
@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory
 /**
  * Email microservice entrypoint.
  */
+// -> Triggers: JVM service startup for ms-email || Contract: boots Ktor Netty engine
 fun main(args: Array<String>) {
     EngineMain.main(args)
 }
@@ -28,6 +29,7 @@ fun main(args: Array<String>) {
 /**
  * Configures DI, JSON serialization, email routes, and shutdown lifecycle logging.
  */
+// -> Triggers: Ktor application initialization || Contract: wires DI, registers email routes, starts stream consumer, and handles shutdown
 fun Application.module() {
     val logger = LoggerFactory.getLogger("Application")
 
@@ -47,6 +49,8 @@ fun Application.module() {
             ignoreUnknownKeys = true
         })
     }
+
+    configureRouting()
 
     val consumer by inject<EmailAlertConsumer>()
 

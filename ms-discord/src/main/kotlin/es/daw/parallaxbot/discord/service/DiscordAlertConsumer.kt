@@ -7,7 +7,11 @@ import es.daw.parallaxbot.common.service.SpringCallbackService
 import io.lettuce.core.RedisClient
 
 /**
- * Consumes Discord alert jobs, resolves required artifacts, sends embeds, and reports callback status.
+ * Discord Alert Worker
+ *
+ * Stream: alerts.discord.v1
+ * Group:  discord-workers
+ * Role:   Dispatch Discord embed notifications for normalized alert messages.
  */
 class DiscordAlertConsumer(
     redisClient: RedisClient,
@@ -22,13 +26,7 @@ class DiscordAlertConsumer(
 
     override fun getWorkerType() = "ktor-discord-worker"
 
-    /**
-     * Delegates one Discord alert to the provider-specific delivery service.
-     *
-     * @param message normalized alert payload consumed from Redis stream.
-     * @param artifactUrl optional screenshot/artifact URL generated for this alert.
-     * @return provider message identifier when available.
-     */
+    // -> Source: Redis Stream || Action: Send Discord embed notification || Strategy: return provider message id, fallback null on provider failure
     override suspend fun sendToProvider(message: AlertStreamMessage, artifactUrl: String?): String? {
         return discordService.sendEventEmbed(message, artifactUrl).toString()
     }

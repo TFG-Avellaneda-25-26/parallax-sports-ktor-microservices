@@ -43,6 +43,8 @@ class PlaywrightService(
                 page.setContent(htmlContent)
                 page.addStyleTag(Page.AddStyleTagOptions().setContent(cssContent))
 
+                page.waitForLoadState()
+
                 page.screenshot(Page.ScreenshotOptions().setType(ScreenshotType.JPEG))
             }
         }.getOrElse { e ->

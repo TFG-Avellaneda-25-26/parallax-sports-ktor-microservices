@@ -11,7 +11,7 @@ import io.ktor.http.isSuccess
 import org.slf4j.LoggerFactory
 
 /**
- * Sends delivery status callbacks to the Spring API after provider processing.
+ * Sends alert delivery outcomes to the Spring backend callback endpoint.
  */
 class SpringCallbackService(
     private val httpClient: HttpClient,
@@ -19,13 +19,8 @@ class SpringCallbackService(
     private val baseUrl: String = "http://localhost:8080"
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    /**
-     * Posts alert delivery status for one alert.
-     *
-     * @param alertId target alert identifier in the upstream API.
-     * @param statusCallback final provider status payload.
-     * @return true when callback endpoint accepts the status; false when transport or server fails.
-     */
+    // -> Source: Worker Delivery Result || Action: POST alert callback status to Spring API || Strategy: Return false on transport or non-success failures
+    // -> API: /api/internal/alerts/{alertId}/status || Auth: internal network || Scope: worker status callback
     suspend fun sendStatus(alertId: Long, statusCallback: AlertStatusCallback): Boolean {
         return try {
             val response = httpClient.post("$baseUrl/api/internal/alerts/$alertId/status") {

@@ -3,7 +3,7 @@ package es.daw.parallaxbot.common.dto
 import kotlinx.serialization.Serializable
 
 /**
- * Callback payload sent to the upstream API with final delivery status for one alert.
+ * Callback payload reported by workers to the Spring alert status endpoint.
  */
 @Serializable
 class AlertStatusCallback(

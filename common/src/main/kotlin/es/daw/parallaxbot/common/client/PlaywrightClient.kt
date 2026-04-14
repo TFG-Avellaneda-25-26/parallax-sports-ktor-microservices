@@ -5,11 +5,13 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import org.slf4j.LoggerFactory
 
 /**
- * Calls the Playwright microservice to generate or fetch event screenshot artifacts.
+ * Internal HTTP client used to request screenshot artifact generation from ms-playwright.
  */
 class PlaywrightClient(
     private val httpClient: HttpClient,
@@ -18,15 +20,12 @@ class PlaywrightClient(
 
     private val logger = LoggerFactory.getLogger(PlaywrightClient::class.java)
 
-    /**
-     * Requests a screenshot artifact for the provided event.
-     *
-     * @param eventId event identifier used by downstream services to resolve the source event.
-     * @return response contract with success flag, URL when available, and error context otherwise.
-     */
+    // -> Source: Worker Artifact Requirement || Action: Request screenshot generation from Playwright || Strategy: Return structured failure payload on network/API errors
+    // -> API: /api/internal/screenshot || Auth: internal network || Scope: event screenshot artifact generation
     suspend fun generateEventScreenshot(eventId: Long): PlaywrightResponse {
         return try {
             val response = httpClient.post("$playwrightBaseUrl/api/internal/screenshot") {
+                contentType(ContentType.Application.Json)
                 setBody(mapOf("eventId" to eventId))
             }
 

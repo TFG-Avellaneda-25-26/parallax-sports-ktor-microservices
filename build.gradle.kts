@@ -1,54 +1,63 @@
-val ktorVersion: String by project
-val kotlinVersion: String by project
-val logbackVersion: String by project
-val koinVersion: String by project
+import org.gradle.accessors.dm.LibrariesForLibs
+import org.gradle.kotlin.dsl.libs
 
 plugins {
-    kotlin("jvm") version "2.3.0" apply false
-    id("io.ktor.plugin") version "3.4.1" apply false
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.3.20" apply false
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.ktor) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.dependency.analysis)
 }
 
 allprojects {
     group = "es.daw.parallaxbot"
     version = "0.0.1"
 
-    extra["ktorVersion"] = ktorVersion
-    extra["kotlinVersion"] = kotlinVersion
-    extra["logbackVersion"] = logbackVersion
-    extra["koinVersion"] = koinVersion
+    repositories {
+        mavenCentral()
+    }
 
     tasks.withType<ProcessResources>().configureEach {
-    if (project.name != "common") {
-        project.evaluationDependsOn(":common")
+        if (project.name != "common") {
+            project.evaluationDependsOn(":common")
 
-        val sharedResources = project(":common").layout.projectDirectory.dir("src/main/resources")
+            val sharedResources = project(":common").layout.projectDirectory.dir("src/main/resources")
 
-        from(sharedResources) {
-            include("shared-data.conf")
-            include("logback.xml")
-            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            from(sharedResources) {
+                include("shared-data.conf")
+                include("logback.xml")
+                duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            }
         }
     }
 }
 
-    repositories {
-        mavenCentral()
-    }
-}
-
 subprojects {
+    val libs = rootProject.extensions.getByType<LibrariesForLibs>()
 
-    apply(plugin = "org.jetbrains.kotlin.jvm")
-    apply(plugin = "org.jetbrains.kotlin.plugin.serialization")
+    apply(plugin = libs.plugins.kotlin.jvm.get().pluginId)
+    apply(plugin = libs.plugins.kotlin.serialization.get().pluginId)
 
     dependencies {
-        add("implementation", "io.insert-koin:koin-core:${koinVersion}")
-        add("implementation", "io.insert-koin:koin-ktor:${koinVersion}")
-        add("implementation", "io.insert-koin:koin-logger-slf4j:${ktorVersion}")
-        add("implementation","ch.qos.logback:logback-classic:${logbackVersion}")
+
+        if (project.path != ":common") {
+            apply(plugin = libs.plugins.ktor.get().pluginId)
+            add("implementation", project(":common"))
+            add("implementation", libs.ktor.server.netty)
+            add("implementation", libs.ktor.server.content.negotiation)
+            add("implementation", libs.koin.ktor)
+            add("implementation", libs.koin.logger.slf4j)
+            add("implementation", libs.logback.classic)
+        }
+
+        if (project.path != ":ms-playwright" && project.path != ":ms-cloudinary") {
+            add("implementation", libs.redis.lettuce)
+            add("implementation", libs.kotlin.coroutines.core)
+        }
+
+        add("implementation", libs.ktor.server.core)
+        add("implementation", libs.ktor.client.cio)
+        add("implementation", libs.ktor.client.content.negotiation)
+        add("implementation", libs.ktor.serialization.json)
+        add("implementation", libs.koin.core)
     }
 }
-
-
-

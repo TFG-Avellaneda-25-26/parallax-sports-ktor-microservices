@@ -3,22 +3,32 @@ package es.daw.parallaxbot.common
 import es.daw.parallaxbot.common.client.PlaywrightClient
 import es.daw.parallaxbot.common.dto.AlertStatusCallback
 import es.daw.parallaxbot.common.dto.AlertStreamMessage
+import es.daw.parallaxbot.common.mapper.mapToDto
 import es.daw.parallaxbot.common.service.SpringCallbackService
 import io.lettuce.core.Consumer
 import io.lettuce.core.RedisClient
+import io.lettuce.core.StreamMessage
+import io.lettuce.core.XAddArgs
+import io.lettuce.core.XGroupCreateArgs
 import io.lettuce.core.XReadArgs
+import io.lettuce.core.api.sync.RedisCommands
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.slf4j.LoggerFactory
-import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 import kotlin.time.toJavaDuration
 
 /**
- * Consumes alert messages from a Redis stream consumer group and delegates delivery to a channel-specific worker.
+ * Base Redis stream worker.
  *
- * This base class owns group creation, polling, ack semantics, retry loop behavior, and payload mapping.
+ * Stream: dynamic per channel worker
+ * Group: dynamic per channel worker
+ * Role: poll alerts stream entries, resolve optional artifacts, dispatch provider work, and report callback status.
  */
 abstract class RedisStreamConsumer(
     private val redisClient: RedisClient,
@@ -26,162 +36,177 @@ abstract class RedisStreamConsumer(
     private val springCallbackService: SpringCallbackService,
     val streamName: String,
     val groupName: String,
-    private val consumerName: String = "worker-${UUID.randomUUID()}"
+    baseName: String = "worker-discord-test"
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
+    private val consumerName = "$baseName-1"
     private var isRunning = true
+    private val browserLimit = Semaphore(3)
 
     abstract fun getWorkerType(): String
-        /**
-         * Processes one stream message.
-         *
-         * @param message normalized alert payload read from Redis stream fields.
-         * @return true when artifact generation (if required), provider delivery, and callback status
-         * reporting all succeed; false when any step fails and the message must remain pending.
-         */
-    suspend fun onMessageReceived(message: AlertStreamMessage): Boolean {
-
-        val startTime = Clock.System.now()
-            val workerId = "${getWorkerType()}-${Thread.currentThread().threadId()}"
-
-        return try {
-            val artifactUrl = if (message.artifactRequired) {
-                val response = playwrightClient.generateEventScreenshot(message.eventId)
-
-                if (!response.success || response.url == null) {
-                    throw Exception("Playwright failed: ${response.errorMessage}")
-                }
-                response.url
-            } else null
-
-            val providerMessageId = sendToProvider(message, artifactUrl)
-
-            springCallbackService.sendStatus(
-                message.alertId,
-                AlertStatusCallback(
-                    status = "sent",
-                    workerId = workerId,
-                    providerMessageId = providerMessageId,
-                    latencyMs = (Clock.System.now() - startTime).inWholeMilliseconds
-                )
-            )
-            true
-        } catch (e: Exception) {
-            springCallbackService.sendStatus(
-                message.alertId,
-                AlertStatusCallback(
-                    status = "failed-retryable",
-                    workerId = workerId,
-                    errorMessage = e.message
-                )
-            )
-            false
-        }
-    }
-
     abstract suspend fun sendToProvider(message: AlertStreamMessage, artifactUrl: String?): String?
 
-        /**
-         * Starts the long-running poll loop for this consumer.
-         *
-            * Contract:
-            * 1) Ensures the consumer group exists for the configured stream.
-            * 2) Polls messages with blocking reads from the last-consumed offset.
-            * 3) Maps stream fields to the alert DTO and delegates processing to channel-specific delivery.
-            * 4) ACKs messages only when `onMessageReceived` returns true.
-            * 5) Leaves failed messages unacked so they stay pending for retry/reclaim flows.
-         */
+        /*============================================================
+            REDIS STREAM CONSUMPTION
+            Poll loop, consumer group setup, and concurrent message dispatch
+        ============================================================*/
+        // -> Source: Application Lifecycle || Action: Start Redis stream poll/dispatch loop || Strategy: Blocking reads with loop-level exception recovery
     suspend fun start() = coroutineScope {
-                /*============================================================
-                    CONSUMER BOOTSTRAP
-                    Connection setup and consumer-group initialization
-                ============================================================*/
         logger.info("Starting consumer $consumerName for stream $streamName")
 
         val connection = redisClient.connect()
         val syncCommands = connection.sync()
 
-        try {
-            syncCommands.xgroupCreate(XReadArgs.StreamOffset.from(streamName, "0-0"), groupName)
-        } catch (e: Exception) {
-            logger.warn("Group $groupName already exists for stream $streamName")
-        }
+        setupConsumerGroup(syncCommands)
 
-        logger.info("Started consumer $consumerName for stream $streamName")
-
-                /*============================================================
-                    MESSAGE LOOP
-                    Read, transform, delegate, and ACK successful deliveries
-                ============================================================*/
+        var currentOffset = "0"
         while (isRunning) {
             try {
-                val messages = syncCommands.xreadgroup(
-                    Consumer.from(groupName, consumerName),
-                    XReadArgs.Builder.block(5.seconds.toJavaDuration()).count(1),
-                    XReadArgs.StreamOffset.lastConsumed(streamName)
-                )
+                val messages = fetchMessages(syncCommands, currentOffset)
 
-                if (messages.isEmpty()) continue
+                if (messages.isEmpty()) {
+                    currentOffset = ">"
+                    delay(1.seconds)
+                    continue
+                }
 
-                for (message in messages ) {
-                    val messageId = message.id
-
-                    val dto = mapToDto(message.body)
-                    val success = onMessageReceived(dto)
-
-                    if (success) {
-                        syncCommands.xack(streamName, groupName, messageId)
-                        logger.info("Message $messageId processed and ACKed")
-                    } else {
-                        logger.warn("Message $messageId could not be processed, NO ACK sent")
+                messages.forEach { message ->
+                    launch {
+                        processSingleMessage(message, syncCommands)
                     }
                 }
-                delay(1000)
             } catch (e: Exception) {
-                logger.error("Error in consumer $consumerName for stream $streamName: ${e.message}")
-                delay(5.seconds)
-            } finally {
-                logger.info("Stopping consumer $consumerName for stream $streamName")
-                connection.close()
+                logger.error("Error in loop: ${e.message}")
             }
         }
         connection.close()
     }
 
-    /**
-     * Requests a graceful shutdown of the polling loop.
-     */
-    fun stop() {
-        isRunning = false
+    private fun setupConsumerGroup(syncCommands: RedisCommands<String, String>) {
+        try {
+            syncCommands.xgroupCreate(
+                XReadArgs.StreamOffset.from(streamName, "0"),
+                groupName,
+                XGroupCreateArgs.Builder.mkstream(true)
+            )
+        } catch (_: Exception) {
+            logger.debug("Group $groupName already exists")
+        }
+    }
+
+    private fun fetchMessages(syncCommands: RedisCommands<String, String>, currentOffset: String): List<StreamMessage<String, String>> {
+        return syncCommands.xreadgroup(
+            Consumer.from(groupName, consumerName),
+            XReadArgs.Builder.block(5.seconds.toJavaDuration()).count(3),
+            XReadArgs.StreamOffset.from(streamName, currentOffset)
+        ) ?: emptyList()
+    }
+
+    private suspend fun processSingleMessage(message: StreamMessage<String, String>, sync: RedisCommands<String, String>) {
+        try {
+            delay((100..500).random().toLong())
+            val dto = mapToDto(message.body)
+
+            if (onMessageReceived(dto)) {
+                sync.xack(streamName, groupName, message.id)
+                sync.xdel(streamName, message.id)
+            } else {
+                handleFailureAndRetry(sync, message, dto)
+            }
+        } catch (e: Exception) {
+            logger.error("Error processing message: ${message.id}: ${e.message}")
+        }
+    }
+
+    private suspend fun handleFailureAndRetry(sync: RedisCommands<String, String>, message: StreamMessage<String, String>, dto: AlertStreamMessage) {
+        sync.xack(streamName, groupName, message.id)
+        sync.xdel(streamName, message.id)
+
+        logger.warn("Retrying ${dto.alertId} in 15s seconds...")
+        delay(15.seconds)
+
+        val nextAttempt = dto.attempts + 1
+        val body = message.body.toMutableMap().apply {
+            put("attempts", nextAttempt.toString())
+        }
+
+        sync.xadd(streamName, XAddArgs().maxlen(1000), body)
+    }
+
+        /*============================================================
+            ALERT DELIVERY EXECUTION
+            Max-attempt validation, provider dispatch, and callback reporting
+        ============================================================*/
+        // -> Source: Redis Stream || Action: Process one alert message and decide ack/retry || Strategy: Drop when max attempts reached, retry on provider/callback failures
+    suspend fun onMessageReceived(message: AlertStreamMessage): Boolean {
+        val startTime = Clock.System.now()
+        val workerId = "${getWorkerType()}-${Thread.currentThread().threadId()}"
+
+        if (message.attempts >= message.maxAttempts) {
+            logger.error("Alert ${message.alertId} dropped! Max attempts (${message.maxAttempts}) exceeded!")
+            return true
+        }
+
+        return try {
+            val artifactUrl = getArtifactIfNeeded(message)
+            val providerMessageId = sendToProvider(message, artifactUrl)
+
+            reportStatusToSpring(message, "sent", workerId, providerMessageId, startTime)
+            true
+        } catch (e: Exception) {
+            logger.error("Failed  alert: ${message.alertId}: ${e.message}")
+            reportStatusToSpring(message, "failed-retryable", workerId, errorMessage = e.message)
+            false
+        }
+    }
+
+    // -> Source: Alert Payload || Action: Request screenshot artifact from Playwright || Strategy: Semaphore-limited concurrency and fail-fast on invalid response
+    // -> API: /api/internal/screenshot || Auth: internal network || Scope: event artifact generation
+    private suspend fun getArtifactIfNeeded(message: AlertStreamMessage): String? {
+        if (!message.artifactRequired) return null
+
+        return browserLimit.withPermit {
+            val response = playwrightClient.generateEventScreenshot(message.eventId)
+
+            if (!response.success || response.url == null)
+                throw Exception("Playwright failed: ${response.errorMessage}")
+
+            response.url
+        }
+    }
+
+    // -> Source: Delivery Outcome || Action: Post status callback to Spring API || Strategy: Non-blocking best effort (warn on callback failure)
+    // -> API: /api/internal/alerts/{alertId}/status || Auth: internal network || Scope: alert status propagation
+    private suspend fun reportStatusToSpring(
+        message: AlertStreamMessage,
+        status: String,
+        workerId: String,
+        providerMessageId: String? = null,
+        startTime: Instant? = null,
+        errorMessage: String? = null
+    ) {
+        val latency = startTime?.let { (Clock.System.now() - it).inWholeMilliseconds }
+
+        runCatching {
+            springCallbackService.sendStatus(
+                message.alertId,
+                AlertStatusCallback(
+                    status = status,
+                    workerId = workerId,
+                    providerMessageId = providerMessageId,
+                    latencyMs = latency,
+                    errorMessage = errorMessage
+                )
+            )
+        }.onFailure {
+            logger.warn("Spring API is offline. Status not reported for alert: ${message.alertId}")
+        }
     }
 
     /**
-     * Maps Redis stream fields into the alert contract consumed by downstream workers.
-     *
-     * @param p raw Redis stream key-value fields.
-     * @return alert payload with safe defaults for missing optional fields.
+     * Requests graceful loop termination for the running consumer instance.
      */
-    private fun mapToDto(p: Map<String, String>): AlertStreamMessage {
-        return AlertStreamMessage(
-            schemaVersion = p["schemaVersion"] ?: "v1",
-            alertId = p["alertId"]?.toLong() ?: 0L,
-            userId = p["userId"]?.toLong() ?: 0L,
-            eventId = p["eventId"]?.toLong() ?: 0L,
-            channel = p["channel"] ?: "unknown",
-            sendAtUtc = p["sendAtUtc"] ?: "",
-            idempotencyKey = p["idempotencyKey"] ?: "",
-            attempts = p["attempts"]?.toInt() ?: 0,
-            maxAttempts = p["maxAttempts"]?.toInt() ?: 3,
-            artifactRequired = p["artifactRequired"]?.toBoolean() ?: false,
-            artifactId = p["artifactId"]?.toLong(),
-            eventName = p["eventName"],
-            eventType = p["eventType"],
-            eventStatus = p["eventStatus"],
-            eventStartTimeUtc = p["eventStartTimeUtc"],
-            eventEndTimeUtc = p["eventEndTimeUtc"],
-            competitionName = p["competitionName"],
-            venueName = p["venueName"],
-            venueTimezone = p["venueTimezone"]
-        )
+    fun stop() {
+        isRunning = false
     }
 }
