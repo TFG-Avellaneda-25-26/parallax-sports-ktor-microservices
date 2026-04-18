@@ -1,11 +1,5 @@
 common/src/main/resources/shared-secrets.conf filter=git-crypt diff=git-crypt
-common/src/main/resources/shared-secrets.local.conf filter=git-crypt diff=git-crypt
 ms-discord/src/main/resources/application-secrets.conf filter=git-crypt diff=git-crypt
-ms-discord/src/main/resources/application-secrets.local.conf filter=git-crypt diff=git-crypt
 ms-telegram/src/main/resources/application-secrets.conf filter=git-crypt diff=git-crypt
-ms-telegram/src/main/resources/application-secrets.local.conf filter=git-crypt diff=git-crypt
 ms-cloudinary/src/main/resources/application-secrets.conf filter=git-crypt diff=git-crypt
-ms-cloudinary/src/main/resources/application-secrets.local.conf filter=git-crypt diff=git-crypt
 ms-email/src/main/resources/application-secrets.conf filter=git-crypt diff=git-crypt
-ms-email/src/main/resources/application-secrets.local.conf filter=git-crypt diff=git-crypt
-ms-playwright/src/main/resources/application-secrets.local.conf filter=git-crypt diff=git-crypt

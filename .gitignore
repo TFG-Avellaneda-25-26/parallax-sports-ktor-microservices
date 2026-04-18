@@ -24,5 +24,6 @@ Desktop.ini
 test-results/
 playwright-report/
 
-# --- Secrets (local developer overrides — committed encrypted via git-crypt) ---
-# **/application-secrets.local.conf and shared-secrets.local.conf are tracked, not ignored
+# --- Secrets (local developer overrides, never committed) ---
+**/application-secrets.local.conf
+**/shared-secrets.local.conf
