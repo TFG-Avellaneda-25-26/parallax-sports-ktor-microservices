@@ -25,6 +25,7 @@ allprojects {
             from(sharedResources) {
                 include("shared-data.conf")
                 include("shared-secrets.conf")
+                include("shared-secrets.local.conf")
                 include("logback.xml")
                 duplicatesStrategy = DuplicatesStrategy.INCLUDE
             }
