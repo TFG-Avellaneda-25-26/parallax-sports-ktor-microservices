@@ -2,9 +2,6 @@ package es.daw.parallaxbot.common.mapper
 
 import es.daw.parallaxbot.common.dto.AlertStreamMessage
 
-/**
- * Maps raw Redis stream fields into the normalized alert delivery contract.
- */
 fun mapToDto(p: Map<String, String>): AlertStreamMessage {
     return AlertStreamMessage(
         schemaVersion = p["schemaVersion"] ?: "v1",
@@ -25,6 +22,14 @@ fun mapToDto(p: Map<String, String>): AlertStreamMessage {
         eventEndTimeUtc = p["eventEndTimeUtc"],
         competitionName = p["competitionName"],
         venueName = p["venueName"],
-        venueTimezone = p["venueTimezone"]
+        venueTimezone = p["venueTimezone"],
+        userTimezone = p["userTimezone"],
+        userLocale = p["userLocale"],
+        userEmail = p["userEmail"],
+        renderHash = p["renderHash"],
+        discordDeliveryMode = p["discordDeliveryMode"],
+        discordUserId = p["discordUserId"],
+        discordChannelId = p["discordChannelId"],
+        discordGuildId = p["discordGuildId"]
     )
 }
