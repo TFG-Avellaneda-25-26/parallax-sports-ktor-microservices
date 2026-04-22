@@ -9,10 +9,8 @@ import org.slf4j.LoggerFactory
 
 private val logger: Logger = LoggerFactory.getLogger("ConfigureDiscordBot")
 
-/**
- * Builds and initializes the JDA bot instance, then registers guild commands.
- */
-// -> Source: Service Startup || Action: Connect Discord bot and register slash commands || Strategy: awaitReady before guild command registration
+
+// -> Source: Service Startup || Action: Connect Discord bot and register global slash commands || Strategy: awaitReady before command registration
 fun configureDiscordBot(
     listener: DiscordListener,
     config: DiscordConfig,
@@ -20,12 +18,16 @@ fun configureDiscordBot(
 ): JDA {
 
     val jda = JDABuilder.createDefault(config.token)
-        .enableIntents(GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES)
+        .enableIntents(
+            GatewayIntent.MESSAGE_CONTENT,
+            GatewayIntent.GUILD_MESSAGES,
+            GatewayIntent.DIRECT_MESSAGES
+        )
         .addEventListeners(listener)
         .build()
 
     jda.awaitReady()
-    jda.registerCommands(commands, config.serverId)
+    jda.registerGlobalCommands(commands)
 
     logger.info("DiscordBot started: ${jda.selfUser.name}")
 
@@ -33,30 +35,14 @@ fun configureDiscordBot(
 }
 
 /**
- * Registers slash commands for the configured guild scope.
+ * Registers slash commands globally across every guild the bot is in.
  *
- * @param commands command implementations to expose.
- * @param serverId target guild where commands are updated.
+ * Discord propagates global commands in up to ~1 hour; this is acceptable for
+ * a bot that expects to be installed into many guilds.
  */
-// -> Source: Bot Initialization || Action: Upsert guild slash commands || Strategy: guild-scoped registration with warn log when guild is missing
-private fun JDA.registerCommands(commands: List<ICommand>, serverId: String) {
+private fun JDA.registerGlobalCommands(commands: List<ICommand>) {
     val jdaCommands = commands.map { it.getCommandData() }
-
-    /*============================================================
-      COMMAND REGISTRATION
-      Guild-scoped setup for deterministic rollout behavior
-    ============================================================*/
-    getGuildById(serverId)?.let { guild ->
-        guild.updateCommands().addCommands(jdaCommands).queue {
-            logger.info("Guild Commands updated in ${guild.name}")
-        }
-    } ?: logger.warn("Could not find guild with ID: $serverId")
-
-    // Command setup for global bot (PRODUCTION)
-    /*
-        jda.updateCommands().addCommands(jdaCommands).queue {
-            logger.info("Global Commands updated")
-        }
-    */
+    updateCommands().addCommands(jdaCommands).queue {
+        logger.info("Global commands updated (${jdaCommands.size})")
+    }
 }
-

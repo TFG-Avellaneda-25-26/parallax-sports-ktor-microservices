@@ -1,5 +1,6 @@
 package es.daw.parallaxbot.discord.service
 
+import es.daw.parallaxbot.common.ProviderPermanentFailureException
 import es.daw.parallaxbot.common.config.DiscordConfig
 import es.daw.parallaxbot.common.dto.AlertStreamMessage
 import es.daw.parallaxbot.common.dto.EventDTO
@@ -15,7 +16,9 @@ import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 
 /**
- * Discord provider service that fetches event data and sends rich embeds to configured guild channels.
+ * Discord provider service: fetches event data and delivers rich embeds,
+ * routing each alert to either a DM or a guild channel based on the
+ * pre-resolved routing carried in the stream payload.
  */
 class DiscordService(
     private val httpClient: HttpClient,
@@ -25,7 +28,6 @@ class DiscordService(
     private val jda: JDA by inject()
 
     // -> Source: Slash Command /events || Action: Query event API by league type || Strategy: return empty list on HTTP or transport failures
-    // -> API: configured parallax event endpoint || Auth: internal API key strategy (configured client) || Scope: event list retrieval by type
     suspend fun fetchEventsByType(eventType: String): List<EventDTO> {
         return try {
             logger.info("Fetching events for type $eventType")
@@ -46,26 +48,70 @@ class DiscordService(
         }
     }
 
-    // -> Source: Redis Stream Worker || Action: Publish event embed to configured Discord channel || Strategy: return null when channel/provider send fails
-    fun sendEventEmbed(message: AlertStreamMessage, artifactUrl: String?): String? {
-        return try {
-            val channelId = discordConfig.channelId
-            val channel = jda.getTextChannelById(channelId)
+    // -> Source: Redis Stream Worker || Action: Publish event embed to DM or guild channel || Strategy: throw ProviderPermanentFailureException on DM/channel errors (log-only, no retry)
+    fun sendEventEmbed(message: AlertStreamMessage, artifactUrl: String?): String {
+        val embed = EmbedFactory.createEventEmbed(message, artifactUrl)
 
-            if (channel == null) {
-                logger.error("Discord channel with ID $channelId not found")
-                return null
+        return when (message.discordDeliveryMode) {
+            "DM" -> sendDm(message, embed)
+            "GUILD_CHANNEL" -> sendGuildChannel(message, embed)
+            else -> {
+                logger.warn(
+                    "Discord alert {} arrived without a delivery mode — dropping permanently",
+                    message.alertId
+                )
+                throw ProviderPermanentFailureException(
+                    "discord_unroutable",
+                    "Missing discordDeliveryMode in stream payload"
+                )
             }
-            val embed = EmbedFactory.createEventEmbed(message, artifactUrl)
+        }
+    }
 
-            val discordMessage = channel.sendMessageEmbeds(embed).complete()
-
-            logger.info("Alert ${message.alertId} sent to Discord. Message ID: ${discordMessage.id}")
-
-            discordMessage.id
+    private fun sendDm(message: AlertStreamMessage, embed: net.dv8tion.jda.api.entities.MessageEmbed): String {
+        val discordUserId = message.discordUserId
+        if (discordUserId.isNullOrBlank()) {
+            throw ProviderPermanentFailureException("discord_unroutable", "Missing discordUserId for DM delivery")
+        }
+        return try {
+            val user = jda.retrieveUserById(discordUserId).complete()
+            val channel = user.openPrivateChannel().complete()
+            val sent = channel.sendMessageEmbeds(embed).complete()
+            logger.info("Alert ${message.alertId} delivered via DM to $discordUserId (messageId=${sent.id})")
+            sent.id
         } catch (e: Exception) {
-            logger.error("Failed to send Discord embed: ${e.message}")
-            null
+            logger.warn(
+                "Discord DM delivery failed alertId={} discordUserId={} reason={}",
+                message.alertId, discordUserId, e.message
+            )
+            throw ProviderPermanentFailureException("dm_closed", e.message ?: "DM delivery rejected")
+        }
+    }
+
+    private fun sendGuildChannel(message: AlertStreamMessage, embed: net.dv8tion.jda.api.entities.MessageEmbed): String {
+        val channelId = message.discordChannelId
+        if (channelId.isNullOrBlank()) {
+            throw ProviderPermanentFailureException(
+                "discord_unroutable",
+                "Missing discordChannelId for guild-channel delivery"
+            )
+        }
+        val channel = jda.getTextChannelById(channelId)
+            ?: throw ProviderPermanentFailureException(
+                "channel_unavailable",
+                "Discord channel $channelId not accessible"
+            )
+
+        return try {
+            val sent = channel.sendMessageEmbeds(embed).complete()
+            logger.info("Alert ${message.alertId} delivered to guild channel $channelId (messageId=${sent.id})")
+            sent.id
+        } catch (e: Exception) {
+            logger.warn(
+                "Discord channel delivery failed alertId={} channelId={} reason={}",
+                message.alertId, channelId, e.message
+            )
+            throw ProviderPermanentFailureException("channel_unavailable", e.message ?: "Channel send rejected")
         }
     }
 }
