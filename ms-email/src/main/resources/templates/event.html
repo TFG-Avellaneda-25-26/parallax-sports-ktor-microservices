@@ -1,15 +1,44 @@
 <!DOCTYPE html>
-<html>
-<body>
-<h1>¡Nueva Alerta de Evento!</h1>
-<p>Evento: <span th:text="${event.eventName}">Nombre del evento</span></p>
-<p>Tipo: <span th:text="${event.eventType}">Tipo</span></p>
-<p>Comienza a las: <span th:text="${event.eventStartTimeUtc}">Fecha</span></p>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${event.eventName}">Parallax alert</title>
+</head>
+<body style="margin:0;padding:0;background:#0f1115;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#e6e6e6;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#0f1115;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#16181f;border-radius:12px;overflow:hidden;">
+          <tr th:if="${artifactUrl}">
+            <td>
+              <img th:src="${artifactUrl}" alt="Event artwork" style="display:block;width:100%;height:auto;">
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 28px;">
+              <h1 style="margin:0 0 8px;font-size:22px;color:#ffffff;" th:text="${event.eventName}">Event name</h1>
+              <p style="margin:0 0 16px;color:#a3a8b4;font-size:14px;" th:if="${event.competitionName}" th:text="${event.competitionName}">Competition</p>
 
-<div th:if="${event.competitionName}">
-  <p>Competición: <span th:text="${event.competitionName}">Liga</span></p>
-</div>
+              <p style="margin:0 0 4px;color:#e6e6e6;font-size:16px;">
+                <strong th:text="${localizedTime}">Fecha</strong>
+              </p>
+              <p style="margin:0 0 16px;color:#7a8091;font-size:12px;">
+                <span th:text="${timezone}">UTC</span>
+              </p>
 
-<p>ID de Alerta: <span th:text="${event.alertId}">000</span></p>
+              <p style="margin:0;color:#a3a8b4;font-size:13px;" th:if="${event.eventType}">
+                <span th:text="${event.eventType}">Type</span>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 28px;border-top:1px solid #22262f;color:#6b7184;font-size:11px;">
+              Parallax Sports Alerts · Alert ID <span th:text="${event.alertId}">000</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>

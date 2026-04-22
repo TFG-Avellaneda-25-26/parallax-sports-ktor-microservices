@@ -25,7 +25,7 @@ fun Application.configureRouting() {
     val logger = LoggerFactory.getLogger(this::class.java)
     val googleTokenManager by inject<GoogleTokenManager>()
     val emailConfig by inject<EmailConfig>()
-    val redirectUri = "http://localhost:8084/auth/callback"
+    val redirectUri = emailConfig.oauthRedirectUri
     val emailService by inject<EmailService>()
 
     routing {

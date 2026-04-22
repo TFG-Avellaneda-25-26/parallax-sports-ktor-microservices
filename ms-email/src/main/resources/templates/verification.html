@@ -1,9 +1,129 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<body>
-<h1 style="color: #5865F2;">¡Hola!</h1>
-<p>Your verification code:</p>
-<h2 th:text="${code}">000000</h2>
-<p>Este código caducará pronto.</p>
-</body>
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify your email — Parallax Sports</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f7;
+      font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;
+    "
+  >
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      style="background-color: #f4f4f7; padding: 40px 0"
+    >
+      <tr>
+        <td align="center">
+          <table
+            width="520"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              background-color: #ffffff;
+              border-radius: 8px;
+              overflow: hidden;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            "
+          >
+            <tr>
+              <td
+                style="
+                  background-color: #5865f2;
+                  padding: 32px 40px;
+                  text-align: center;
+                "
+              >
+                <span
+                  style="
+                    font-size: 34px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    letter-spacing: -0.3px;
+                  "
+                  >Parallax Sports</span
+                >
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding: 40px 40px 32px">
+                <p
+                  style="
+                    margin: 0 0 8px;
+                    font-size: 22px;
+                    font-weight: 600;
+                    color: #1a1a2e;
+                  "
+                >
+                  Verify your email address
+                </p>
+                <p
+                  style="
+                    margin: 0 0 32px;
+                    font-size: 15px;
+                    color: #6b7280;
+                    line-height: 1.6;
+                  "
+                >
+                  Use the code below to complete your registration. It expires
+                  in <strong>10 minutes</strong>.
+                </p>
+
+                <!-- Code box -->
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="margin-bottom: 32px"
+                >
+                  <tr>
+                    <td
+                      align="center"
+                      style="
+                        background-color: #f0f1ff;
+                        border: 2px dashed #5865f2;
+                        border-radius: 8px;
+                        padding: 24px;
+                      "
+                    >
+                      <span
+                        th:text="${code}"
+                        style="
+                          font-size: 36px;
+                          font-weight: 700;
+                          letter-spacing: 10px;
+                          color: #5865f2;
+                        "
+                        >000000</span
+                      >
+                    </td>
+                  </tr>
+                </table>
+
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 13px;
+                    color: #9ca3af;
+                    line-height: 1.6;
+                  "
+                >
+                  If you did not create an account with Parallax Sports, you can
+                  safely ignore this email. Someone may have entered your
+                  address by mistake.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>
