@@ -7,9 +7,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
-/**
- * Slash command that generates and sends user account-link URL for Discord authentication.
- */
 class LoginCommand(private val authApiUrl: String) : ICommand {
 
     override val name: String = "login"
@@ -17,20 +14,12 @@ class LoginCommand(private val authApiUrl: String) : ICommand {
 
     val logger: Logger = LoggerFactory.getLogger(LoginCommand::class.java)
 
-    // -> Source: Discord Slash /login || Action: Generate auth link and send ephemeral embed || Strategy: defer reply and report error to interaction hook
-    // -> API: configured auth endpoint with discord id + token || Auth: user-scoped one-time token strategy || Scope: account link bootstrap
     override suspend fun execute(event: SlashCommandInteractionEvent) {
         try {
             event.deferReply(true).queue()
-            val discordId = event.user.id
-            val token = UUID.randomUUID().toString()
-
-            val linkUrl = "${authApiUrl}?id=$discordId&token=$token"
-
-            println(linkUrl)
 
             val embed = EmbedFactory.userAuth(event.user.name, event.user.avatarUrl)
-                .addField("Link", linkUrl, false)
+                .addField("Link", authApiUrl, false)
 
             event.hook.sendMessageEmbeds(embed.build())
                 .setEphemeral(true)
