@@ -18,18 +18,13 @@ import io.ktor.utils.io.readRemaining
 /**
  * Registers internal HTTP endpoints for Cloudinary artifact lookup and upload.
  */
-// -> Source: Ktor Routing Init || Action: Expose internal Cloudinary endpoints || Strategy: structured 200/400/500 response mapping
 fun Application.configureRouting(cloudinaryService: CloudinaryService) {
     routing {
-                /*============================================================
-                    ARTIFACT LOOKUP
-                    Resolve existing Cloudinary asset URL by event id
-                ============================================================*/
-                // -> Source: HTTP GET /check/{eventId} || Action: Read artifact metadata from Cloudinary-backed service || Strategy: return 400 on missing id, else 200 with existence contract
-        get("/check/{eventId}") {
+        get("/check/{eventId}/{hash}") {
             val eventId = call.parameters["eventId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+            val hash = call.parameters["hash"] ?: return@get call.respond(HttpStatusCode.BadRequest)
 
-            val existingUrl = cloudinaryService.getExistingUrl(eventId)
+            val existingUrl = cloudinaryService.getExistingUrl(eventId, hash)
 
             call.respond(
                 HttpStatusCode.OK,
@@ -41,21 +36,20 @@ fun Application.configureRouting(cloudinaryService: CloudinaryService) {
             )
         }
 
-                /*============================================================
-                    ARTIFACT UPLOAD
-                    Parse multipart payload and persist image in Cloudinary
-                ============================================================*/
-                // -> Source: HTTP POST /upload || Action: Upload artifact bytes and return persisted URL || Strategy: validate multipart payload, return 400 on missing data, 500 on unexpected failures
         post("/upload") {
             try {
                 val multipart = call.receiveMultipart()
                 var fileBytes: ByteArray? = null
                 var eventId: String? = null
+                var hash: String? = null
 
                 multipart.forEachPart { part ->
                     when (part) {
                         is PartData.FormItem -> {
-                            if (part.name == "eventId") eventId = part.value
+                            when (part.name) {
+                                "eventId" -> eventId = part.value
+                                "hash" -> hash = part.value
+                            }
                         }
                         is PartData.FileItem -> {
                             fileBytes = part.provider().readRemaining().readByteArray()
@@ -64,11 +58,11 @@ fun Application.configureRouting(cloudinaryService: CloudinaryService) {
                     }
                 }
 
-                if (fileBytes == null || eventId == null) {
+                if (fileBytes == null || eventId == null || hash == null) {
                     return@post call.respond(HttpStatusCode.BadRequest, UploadResponse(false, errorMessage = "Data missing"))
                 }
 
-                val url = cloudinaryService.uploadImage(fileBytes, eventId)
+                val url = cloudinaryService.uploadImage(fileBytes, eventId, hash)
                 call.respond(HttpStatusCode.OK, UploadResponse(success = url != null, url = url, eventId = eventId))
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, UploadResponse(false, errorMessage = e.message))

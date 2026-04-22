@@ -12,25 +12,21 @@ import org.slf4j.LoggerFactory
 class CloudinaryService(private val cloudinary: Cloudinary) {
 
     private val logger = LoggerFactory.getLogger(CloudinaryService::class.java)
+    private val folder = "parallaxbot/events"
 
-        /*============================================================
-            CLOUDINARY WRITE OPERATIONS
-            Persist event artifacts and return canonical secure URL
-        ============================================================*/
-        // -> Source: Internal Upload Request || Action: Upload image bytes to Cloudinary folder || Strategy: IO dispatcher execution, return null on provider errors
-        // -> API: Cloudinary Upload API || Auth: API Key + Secret || Scope: image write/overwrite in parallaxbot/events
     suspend fun uploadImage(
         fileBytes: ByteArray,
-        eventId: String
+        eventId: String,
+        hash: String,
     ): String? = withContext(Dispatchers.IO) {
         try {
+            val publicId = "${eventId}_${hash}"
             val options = ObjectUtils.asMap(
-                "public_id", eventId,
-                "folder", "parallaxbot/events",
+                "public_id", publicId,
+                "folder", folder,
                 "resource_type", "image",
-                "overwrite", true
+                "overwrite", false,
             )
-
             val uploadResult = cloudinary.uploader().upload(fileBytes, options)
             uploadResult["secure_url"] as String
         } catch (e: Exception) {
@@ -39,15 +35,10 @@ class CloudinaryService(private val cloudinary: Cloudinary) {
         }
     }
 
-    /*============================================================
-      CLOUDINARY READ OPERATIONS
-      Resolve existing artifact URL for idempotent screenshot flow
-    ============================================================*/
-    // -> Source: Internal Lookup Request || Action: Fetch existing Cloudinary resource URL || Strategy: IO dispatcher execution, return null when resource is absent or call fails
-    // -> API: Cloudinary Admin Resource API || Auth: API Key + Secret || Scope: image metadata lookup in parallaxbot/events
-    suspend fun getExistingUrl(eventId: String): String? = withContext(Dispatchers.IO) {
+    suspend fun getExistingUrl(eventId: String, hash: String): String? = withContext(Dispatchers.IO) {
         try {
-            val resource = cloudinary.api().resource("parallaxbot/events/$eventId", ObjectUtils.emptyMap())
+            val publicId = "${eventId}_${hash}"
+            val resource = cloudinary.api().resource("$folder/$publicId", ObjectUtils.emptyMap())
             resource["secure_url"] as String
         } catch (e: Exception) {
             null
