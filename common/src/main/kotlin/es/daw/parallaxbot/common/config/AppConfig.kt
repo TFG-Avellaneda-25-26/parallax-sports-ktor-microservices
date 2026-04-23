@@ -5,7 +5,8 @@ data class DiscordConfig(
     val authApiUrl: String,
     val discordAdminApiUrl: String,
     val apiKey: String,
-    val token: String
+    val token: String,
+    val devGuild: String
 )
 
 data class PlaywrightConfig(

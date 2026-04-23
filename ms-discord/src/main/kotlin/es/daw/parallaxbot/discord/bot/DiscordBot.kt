@@ -27,7 +27,11 @@ fun configureDiscordBot(
         .build()
 
     jda.awaitReady()
-    jda.registerGlobalCommands(commands)
+
+    jda.updateCommands().queue( { logger.info("Global commands cleared") })
+
+    jda.registerGlobalCommandsByGuild(config, commands)
+    //jda.registerGlobalCommands(commands)
 
     logger.info("DiscordBot started: ${jda.selfUser.name}")
 
@@ -42,7 +46,23 @@ fun configureDiscordBot(
  */
 private fun JDA.registerGlobalCommands(commands: List<ICommand>) {
     val jdaCommands = commands.map { it.getCommandData() }
-    updateCommands().addCommands(jdaCommands).queue {
-        logger.info("Global commands updated (${jdaCommands.size})")
-    }
+    updateCommands().addCommands(jdaCommands).queue(
+        { logger.info("Global commands updated (${jdaCommands.size})") },
+        { err -> logger.error("Global commands update failed!", err) }
+    )
+}
+
+/**
+ *  Register slash commands in one specific guild
+ *  Discord propagates guild commands instantly; this is optimal for
+ *  testing in one specific server
+ */
+private fun JDA.registerGlobalCommandsByGuild(config: DiscordConfig, commands: List<ICommand>) {
+    val guild = getGuildById(config.devGuild)
+
+    val jdaCommands = commands.map { it.getCommandData() }
+    guild?.updateCommands()?.addCommands(jdaCommands)?.queue(
+        { logger.info("Dev guild commands updated (${jdaCommands.size})") },
+        { err -> logger.error("Failed to update dev guild commands!", err) }
+    )
 }
