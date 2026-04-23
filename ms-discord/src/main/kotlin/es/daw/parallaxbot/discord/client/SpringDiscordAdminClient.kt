@@ -1,6 +1,7 @@
 package es.daw.parallaxbot.discord.client
 
 import es.daw.parallaxbot.common.config.DiscordConfig
+import es.daw.parallaxbot.common.dto.SportDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -14,6 +15,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.serialization.Serializable
 import org.slf4j.LoggerFactory
+import kotlin.math.log
 
 /**
  * Thin HTTP client for Spring's /api/internal/discord admin endpoints.
@@ -127,6 +129,20 @@ class SpringDiscordAdminClient(
         } catch (e: Exception) {
             logger.error("Discord admin call error: ${e.message}")
             false
+        }
+    }
+
+    suspend fun getSports(): List<SportDTO> {
+        return try {
+            val response = httpClient.get("$baseUrl/sports")
+
+            if (response.status.isSuccess()) {
+                logger.info("Sports retrieved successfully, ${response.body<List<SportDTO>>()}")
+                response.body<List<SportDTO>>()
+            } else emptyList()
+        } catch (e: Exception) {
+            logger.warn("Failed to fetch sports: ${e.message}")
+            emptyList()
         }
     }
 }

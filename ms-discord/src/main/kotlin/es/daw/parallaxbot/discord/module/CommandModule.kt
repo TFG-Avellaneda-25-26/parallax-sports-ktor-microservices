@@ -1,10 +1,13 @@
 package es.daw.parallaxbot.discord.module
 
+import es.daw.parallaxbot.common.dto.SportDTO
 import es.daw.parallaxbot.discord.bot.ICommand
+import es.daw.parallaxbot.discord.client.SpringDiscordAdminClient
 import es.daw.parallaxbot.discord.commands.EventsCommand
 import es.daw.parallaxbot.discord.commands.LinkCommand
 import es.daw.parallaxbot.discord.commands.SetChannelCommand
 import es.daw.parallaxbot.discord.commands.SetDeliveryCommand
+import kotlinx.coroutines.runBlocking
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
@@ -14,8 +17,15 @@ import org.koin.dsl.module
 val commandModule = module {
     singleOf(::LinkCommand)
     singleOf(::EventsCommand)
-    singleOf(::SetChannelCommand)
     singleOf(::SetDeliveryCommand)
+
+    single<SetChannelCommand> {
+        val sports = runBlocking { get<SpringDiscordAdminClient>().getSports() }
+        SetChannelCommand(
+            adminClient = get(),
+            sports = sports
+        )
+    }
 
     single<List<ICommand>> {
         listOf(
