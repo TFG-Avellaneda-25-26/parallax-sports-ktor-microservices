@@ -45,7 +45,7 @@ class SetDeliveryCommand(
         val userId = adminClient.resolveUserIdByDiscord(discordUserId)
         if (userId == null) {
             event.hook.sendMessage(
-                "You have to link your Parallax account first. Run `/login` and follow the link."
+                "You have to link your Parallax account first. Run `/link` and follow the link."
             ).setEphemeral(true).queue()
             return
         }

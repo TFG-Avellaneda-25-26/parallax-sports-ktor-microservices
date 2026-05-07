@@ -28,10 +28,11 @@ fun configureDiscordBot(
 
     jda.awaitReady()
 
-    jda.updateCommands().queue( { logger.info("Global commands cleared") })
-
-    jda.registerGlobalCommandsByGuild(config, commands)
-    //jda.registerGlobalCommands(commands)
+    if (!config.devGuild.isNullOrBlank()) {
+        jda.registerGuildCommands(config.devGuild, commands)
+    } else {
+        jda.registerGlobalCommands(commands)
+    }
 
     logger.info("DiscordBot started: ${jda.selfUser.name}")
 
@@ -57,8 +58,8 @@ private fun JDA.registerGlobalCommands(commands: List<ICommand>) {
  *  Discord propagates guild commands instantly; this is optimal for
  *  testing in one specific server
  */
-private fun JDA.registerGlobalCommandsByGuild(config: DiscordConfig, commands: List<ICommand>) {
-    val guild = getGuildById(config.devGuild)
+private fun JDA.registerGuildCommands(devGuild: String, commands: List<ICommand>) {
+    val guild = getGuildById(devGuild)
 
     val jdaCommands = commands.map { it.getCommandData() }
     guild?.updateCommands()?.addCommands(jdaCommands)?.queue(

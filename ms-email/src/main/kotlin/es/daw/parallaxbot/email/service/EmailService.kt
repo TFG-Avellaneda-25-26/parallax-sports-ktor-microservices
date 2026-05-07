@@ -1,5 +1,6 @@
 package es.daw.parallaxbot.email.service
 
+import es.daw.parallaxbot.common.ProviderPermanentFailureException
 import es.daw.parallaxbot.common.dto.AlertStreamMessage
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -31,7 +32,10 @@ class EmailService(
             val to = message.userEmail
             if (to.isNullOrBlank()) {
                 logger.warn("Missing recipient email alertId=${message.alertId}")
-                return null
+                throw ProviderPermanentFailureException(
+                    "missing_email",
+                    "Missing recipient email for alert ${message.alertId}"
+                )
             }
 
             val locale = message.userLocale?.takeIf { it.isNotBlank() }
@@ -56,6 +60,8 @@ class EmailService(
 
             logger.info("Parallax event notification sent to=$to alertId=${message.alertId}")
             googleMessageId
+        } catch (e: ProviderPermanentFailureException) {
+            throw e
         } catch (e: Exception) {
             logger.error("Error while sending event: ${e.message}", e)
             null

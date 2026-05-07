@@ -15,7 +15,7 @@ val discordConfigModule = module {
             discordAdminApiUrl = config.property("parallaxbot.api.endpoints.internal-discord").getString(),
             apiKey = config.property("parallaxbot.api.key").getString(),
             token = config.property("parallaxbot.discord.token").getString(),
-            devGuild = config.property("parallaxbot.discord.devGuild").getString()
+            devGuild = config.propertyOrNull("parallaxbot.discord.devGuild")?.getString()
         )
     }
 }

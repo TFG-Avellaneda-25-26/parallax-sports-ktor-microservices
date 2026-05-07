@@ -1,13 +1,16 @@
 package es.daw.parallaxbot.discord.bot
 
 import es.daw.parallaxbot.discord.client.SpringDiscordAdminClient
+import es.daw.parallaxbot.discord.service.SportsCache
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.commands.Command
 import org.slf4j.LoggerFactory
 import java.time.OffsetDateTime
 
@@ -18,7 +21,8 @@ import java.time.OffsetDateTime
 class DiscordListener(
     commandList: List<ICommand>,
     private val scope: CoroutineScope,
-    private val adminClient: SpringDiscordAdminClient
+    private val adminClient: SpringDiscordAdminClient,
+    private val sportsCache: SportsCache
 ) : ListenerAdapter() {
 
     private val commandList = commandList.associateBy { it.name }
@@ -40,6 +44,23 @@ class DiscordListener(
                 }
             } catch (e: Exception) {
                 logger.error("Error while executing command $commandName", e)
+            }
+        }
+    }
+
+    override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
+        if (event.name != "parallax-setchannel") return
+        val focused = event.focusedOption
+        if (focused.name != "sport") return
+
+        scope.launch {
+            try {
+                val matches = sportsCache.search(focused.value, 25)
+                val choices = matches.map { Command.Choice(it.name, it.key) }
+                event.replyChoices(choices).queue()
+            } catch (e: Exception) {
+                logger.warn("Autocomplete failed for parallax-setchannel: ${e.message}")
+                event.replyChoices(emptyList()).queue()
             }
         }
     }

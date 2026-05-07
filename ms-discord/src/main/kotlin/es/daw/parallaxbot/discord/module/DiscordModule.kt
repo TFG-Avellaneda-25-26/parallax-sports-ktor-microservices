@@ -5,6 +5,7 @@ import es.daw.parallaxbot.discord.bot.DiscordListener
 import es.daw.parallaxbot.discord.bot.configureDiscordBot
 import es.daw.parallaxbot.discord.client.SpringDiscordAdminClient
 import es.daw.parallaxbot.discord.service.DiscordService
+import es.daw.parallaxbot.discord.service.SportsCache
 import es.daw.parallaxbot.common.config.discordConfigModule
 import es.daw.parallaxbot.common.config.networkModule
 import es.daw.parallaxbot.common.config.redisModule
@@ -22,6 +23,7 @@ import org.koin.dsl.module
 val discordModule = module {
     single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
     singleOf(::SpringDiscordAdminClient)
+    singleOf(::SportsCache)
     singleOf(::DiscordListener)
     singleOf(::SpringCallbackService)
     singleOf(::PlaywrightClient)

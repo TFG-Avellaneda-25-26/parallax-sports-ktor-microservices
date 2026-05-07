@@ -137,8 +137,9 @@ class SpringDiscordAdminClient(
             val response = httpClient.get("$baseUrl/sports")
 
             if (response.status.isSuccess()) {
-                logger.info("Sports retrieved successfully, ${response.body<List<SportDTO>>()}")
-                response.body<List<SportDTO>>()
+                val sports = response.body<List<SportDTO>>()
+                logger.info("Sports retrieved successfully, $sports")
+                sports
             } else emptyList()
         } catch (e: Exception) {
             logger.warn("Failed to fetch sports: ${e.message}")

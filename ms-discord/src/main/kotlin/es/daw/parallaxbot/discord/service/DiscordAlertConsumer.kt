@@ -27,7 +27,7 @@ class DiscordAlertConsumer(
     override fun getWorkerType() = "ktor-discord-worker"
 
     // -> Source: Redis Stream || Action: Send Discord embed notification || Strategy: return provider message id; DiscordService throws ProviderPermanentFailureException on unroutable/DM/channel errors
-    override suspend fun sendToProvider(message: AlertStreamMessage, artifactUrl: String?): String {
+    override suspend fun sendToProvider(message: AlertStreamMessage, artifactUrl: String?): String? {
         return discordService.sendEventEmbed(message, artifactUrl)
     }
 }
