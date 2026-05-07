@@ -2,9 +2,6 @@ package es.daw.parallaxbot.common.dto
 
 import kotlinx.serialization.Serializable
 
-/**
- * Upload result contract returned by ms-cloudinary after artifact persistence.
- */
 @Serializable
 data class UploadResponse(
     val success: Boolean,

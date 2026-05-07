@@ -4,27 +4,22 @@ import io.ktor.server.config.ApplicationConfig
 import io.lettuce.core.RedisClient
 import org.koin.dsl.module
 
-/**
- * Loads Discord provider configuration from environment-backed application config.
- */
+
 val discordConfigModule = module {
     single {
         // -> Source: Service Startup || Action: Bind DiscordConfig into DI container || Strategy: fail-fast if required config key is missing
         val config = get<ApplicationConfig>()
         DiscordConfig(
-            serverId = config.property("parallaxbot.discord.server-id").getString(),
             eventApiUrl = config.property("parallaxbot.api.endpoints.event").getString(),
             authApiUrl = config.property("parallaxbot.api.endpoints.auth").getString() + "/discord",
+            discordAdminApiUrl = config.property("parallaxbot.api.endpoints.internal-discord").getString(),
             apiKey = config.property("parallaxbot.api.key").getString(),
             token = config.property("parallaxbot.discord.token").getString(),
-            channelId = config.property("parallaxbot.discord.channels.ping").getString()
+            devGuild = config.propertyOrNull("parallaxbot.discord.devGuild")?.getString()
         )
     }
 }
 
-/**
- * Loads Telegram provider configuration from environment-backed application config.
- */
 val telegramConfigModule = module {
     single {
         // -> Source: Service Startup || Action: Bind TelegramConfig into DI container || Strategy: fail-fast if required config key is missing
@@ -36,9 +31,6 @@ val telegramConfigModule = module {
     }
 }
 
-/**
- * Loads Playwright integration configuration from environment-backed application config.
- */
 val playwrightConfigModule = module {
     single {
         // -> Source: Service Startup || Action: Bind PlaywrightConfig into DI container || Strategy: fail-fast if required config key is missing
@@ -51,9 +43,6 @@ val playwrightConfigModule = module {
     }
 }
 
-/**
- * Loads email and OAuth client configuration from environment-backed application config.
- */
 val emailConfigModule = module {
     single {
         // -> Source: Service Startup || Action: Bind EmailConfig into DI container || Strategy: fail-fast if required config key is missing
@@ -62,14 +51,12 @@ val emailConfigModule = module {
             clientId = config.property("parallaxbot.email.client.id").getString(),
             clientSecret = config.property("parallaxbot.email.client.secret").getString(),
             username = config.property("parallaxbot.email.username").getString(),
-            from = config.property("parallaxbot.email.from").getString()
+            from = config.property("parallaxbot.email.from").getString(),
+            oauthRedirectUri = config.property("parallaxbot.email.oauth.redirect-uri").getString()
         )
     }
 }
 
-/**
- * Loads Cloudinary credentials from environment-backed application config.
- */
 val cloudinaryConfigModule = module {
     single {
         // -> Source: Service Startup || Action: Bind CloudinaryConfig into DI container || Strategy: fail-fast if required config key is missing
@@ -82,9 +69,6 @@ val cloudinaryConfigModule = module {
     }
 }
 
-/**
- * Creates Redis client singleton used by stream consumers and token storage.
- */
 val redisModule = module {
     single {
         // -> Source: Service Startup || Action: Create shared Redis client || Strategy: singleton connection factory for stream and cache operations

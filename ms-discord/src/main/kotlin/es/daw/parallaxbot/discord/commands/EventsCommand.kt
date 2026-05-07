@@ -19,7 +19,7 @@ class EventsCommand(private val discordService: DiscordService) : ICommand {
 
     // -> Source: Discord Slash /events || Action: Fetch events and send grouped embeds || Strategy: immediate empty-state response and chunked embed publish
     override suspend fun execute(event: SlashCommandInteractionEvent) {
-        event.deferReply(false).queue()
+        event.deferReply(true).queue()
 
         try {
             val eventType = event.getOption("type")?.asString ?: "ALL"
@@ -27,7 +27,7 @@ class EventsCommand(private val discordService: DiscordService) : ICommand {
             val events = discordService.fetchEventsByType(eventType)
 
             if (events.isEmpty()) {
-                event.hook.sendMessage("No events found for: $eventType").queue()
+                event.hook.sendMessage("No events found for: $eventType").setEphemeral(true).queue()
                 return
             }
 
@@ -49,10 +49,10 @@ class EventsCommand(private val discordService: DiscordService) : ICommand {
             }
 
             embedGroup.chunked(10).forEach { chunk ->
-                event.hook.sendMessageEmbeds(chunk).queue()
+                event.hook.sendMessageEmbeds(chunk).setEphemeral(true).queue()
             }
         } catch (e: Exception) {
-            event.hook.sendMessage("Error fetching events: ${e.message}").queue()
+            event.hook.sendMessage("Error fetching events: ${e.message}").setEphemeral(true).queue()
         }
     }
 }

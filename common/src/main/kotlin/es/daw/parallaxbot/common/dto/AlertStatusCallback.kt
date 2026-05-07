@@ -2,9 +2,6 @@ package es.daw.parallaxbot.common.dto
 
 import kotlinx.serialization.Serializable
 
-/**
- * Callback payload reported by workers to the Spring alert status endpoint.
- */
 @Serializable
 class AlertStatusCallback(
     val status: String,

@@ -5,6 +5,10 @@ import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.MessageEmbed
 import java.awt.Color
 import java.time.Instant
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * Centralized factory for Discord embeds used by command and alert delivery flows.
@@ -50,9 +54,28 @@ object EmbedFactory {
     }
 
     fun createEventEmbed(message: AlertStreamMessage, imageUrl: String?): MessageEmbed {
+        val locale = message.userLocale?.takeIf { it.isNotBlank() }
+            ?.let { Locale.forLanguageTag(it) } ?: Locale.ENGLISH
+        val zone = message.userTimezone?.takeIf { it.isNotBlank() }
+            ?.runCatching { ZoneId.of(this) }?.getOrNull() ?: ZoneId.of("UTC")
+
+        val localizedTime = message.eventStartTimeUtc
+            ?.runCatching { OffsetDateTime.parse(this).atZoneSameInstant(zone) }?.getOrNull()
+            ?.format(DateTimeFormatter.ofPattern("EEE d MMM · HH:mm", locale))
+
+        val description = buildString {
+            append("El evento está por comenzar")
+            if (localizedTime != null) {
+                append("\n\n🕒 **").append(localizedTime).append("** (").append(zone.id).append(')')
+            }
+            message.competitionName?.takeIf { it.isNotBlank() }?.let {
+                append("\n🏆 ").append(it)
+            }
+        }
+
         val builder = EmbedBuilder()
             .setTitle("🏁 ${message.eventName}")
-            .setDescription("El evento está por comenzar")
+            .setDescription(description)
             .setColor(Color.RED)
 
         if (!message.sendAtUtc.isNullOrBlank()) {

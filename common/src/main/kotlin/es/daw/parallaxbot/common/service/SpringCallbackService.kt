@@ -10,9 +10,6 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import org.slf4j.LoggerFactory
 
-/**
- * Sends alert delivery outcomes to the Spring backend callback endpoint.
- */
 class SpringCallbackService(
     private val httpClient: HttpClient,
 ) {

@@ -153,6 +153,16 @@ abstract class RedisStreamConsumer(
 
             reportStatusToSpring(message, "sent", workerId, providerMessageId, startTime)
             true
+        } catch (e: ProviderPermanentFailureException) {
+            logger.warn("Permanent failure on alert ${message.alertId} reason=${e.errorCode}")
+            reportStatusToSpring(
+                message,
+                "failed_permanent",
+                workerId,
+                errorMessage = e.message,
+                errorCode = e.errorCode
+            )
+            true
         } catch (e: Exception) {
             logger.error("Failed  alert: ${message.alertId}: ${e.message}")
             reportStatusToSpring(message, "failed-retryable", workerId, errorMessage = e.message)
@@ -165,8 +175,19 @@ abstract class RedisStreamConsumer(
     private suspend fun getArtifactIfNeeded(message: AlertStreamMessage): String? {
         if (!message.artifactRequired) return null
 
+        val timezone = if (message.channel.equals("email", ignoreCase = true)) {
+            message.userTimezone ?: message.venueTimezone
+        } else {
+            message.venueTimezone
+        }
+
         return browserLimit.withPermit {
-            val response = playwrightClient.generateEventScreenshot(message.eventId)
+            val response = playwrightClient.generateEventScreenshot(
+                eventId = message.eventId,
+                channel = message.channel,
+                timezone = timezone,
+                renderHash = message.renderHash,
+            )
 
             if (!response.success || response.url == null)
                 throw Exception("Playwright failed: ${response.errorMessage}")
@@ -183,7 +204,8 @@ abstract class RedisStreamConsumer(
         workerId: String,
         providerMessageId: String? = null,
         startTime: Instant? = null,
-        errorMessage: String? = null
+        errorMessage: String? = null,
+        errorCode: String? = null
     ) {
         val latency = startTime?.let { (Clock.System.now() - it).inWholeMilliseconds }
 
@@ -195,7 +217,8 @@ abstract class RedisStreamConsumer(
                     workerId = workerId,
                     providerMessageId = providerMessageId,
                     latencyMs = latency,
-                    errorMessage = errorMessage
+                    errorMessage = errorMessage,
+                    errorCode = errorCode
                 )
             )
         }.onFailure {
