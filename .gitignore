@@ -23,3 +23,8 @@ Desktop.ini
 .local-browsers/
 test-results/
 playwright-report/
+
+# --- Secrets (local developer overrides, never committed) ---
+**/application-secrets.local.conf
+**/shared-secrets.local.conf
+**/shared-data.local.conf

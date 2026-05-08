@@ -1,8 +1,5 @@
 package es.daw.parallaxbot.common.dto
 
-/**
- * Canonical Redis stream payload consumed by channel workers.
- */
 data class AlertStreamMessage(
     val schemaVersion: String,
     val alertId: Long,
@@ -22,5 +19,13 @@ data class AlertStreamMessage(
     val eventEndTimeUtc: String? = null,
     val competitionName: String? = null,
     val venueName: String? = null,
-    val venueTimezone: String? = null
+    val venueTimezone: String? = null,
+    val userTimezone: String? = null,
+    val userLocale: String? = null,
+    val userEmail: String? = null,
+    val renderHash: String? = null,
+    val discordDeliveryMode: String? = null,
+    val discordUserId: String? = null,
+    val discordChannelId: String? = null,
+    val discordGuildId: String? = null
 )

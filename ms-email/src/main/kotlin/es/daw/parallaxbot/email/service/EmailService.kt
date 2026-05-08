@@ -1,5 +1,6 @@
 package es.daw.parallaxbot.email.service
 
+import es.daw.parallaxbot.common.ProviderPermanentFailureException
 import es.daw.parallaxbot.common.dto.AlertStreamMessage
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -13,7 +14,11 @@ import kotlinx.serialization.json.JsonObject
 import org.slf4j.LoggerFactory
 import org.thymeleaf.TemplateEngine
 import org.thymeleaf.context.Context
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Base64
+import java.util.Locale
 
 class EmailService(
     private val httpClient: HttpClient,
@@ -22,20 +27,50 @@ class EmailService(
 
     private val logger = LoggerFactory.getLogger(EmailService::class.java)
 
-    suspend fun sendEvent(message: AlertStreamMessage, accessToken: String): String? {
+    suspend fun sendEvent(message: AlertStreamMessage, accessToken: String, artifactUrl: String?): String? {
         return try {
-            val context = Context().apply { setVariable("event", message) }
+            val to = message.userEmail
+            if (to.isNullOrBlank()) {
+                logger.warn("Missing recipient email alertId=${message.alertId}")
+                throw ProviderPermanentFailureException(
+                    "missing_email",
+                    "Missing recipient email for alert ${message.alertId}"
+                )
+            }
+
+            val locale = message.userLocale?.takeIf { it.isNotBlank() }
+                ?.let { Locale.forLanguageTag(it) } ?: Locale.ENGLISH
+            val zone = message.userTimezone?.takeIf { it.isNotBlank() }
+                ?.runCatching { ZoneId.of(this) }?.getOrNull() ?: ZoneId.of("UTC")
+            val localized = message.eventStartTimeUtc
+                ?.runCatching { OffsetDateTime.parse(this).atZoneSameInstant(zone) }?.getOrNull()
+            val timeLabel = localized?.format(DateTimeFormatter.ofPattern("EEE d MMM · HH:mm", locale))
+                ?: (message.eventStartTimeUtc ?: "")
+
+            val context = Context(locale).apply {
+                setVariable("event", message)
+                setVariable("artifactUrl", artifactUrl)
+                setVariable("localizedTime", timeLabel)
+                setVariable("timezone", zone.id)
+            }
             val htmlContent = templateEngine.process("event", context)
-            val to = "manueldl12062003@gmail.com"
+            val subject = buildSubject(message, timeLabel)
 
-            val googleMessageId = sendGmail(to, "Parallax event notification", htmlContent, accessToken)
+            val googleMessageId = sendGmail(to, subject, htmlContent, accessToken)
 
-            logger.info("Parallax event notification sent")
+            logger.info("Parallax event notification sent to=$to alertId=${message.alertId}")
             googleMessageId
+        } catch (e: ProviderPermanentFailureException) {
+            throw e
         } catch (e: Exception) {
-            logger.error("Error while sending event: ${e.message}")
+            logger.error("Error while sending event: ${e.message}", e)
             null
         }
+    }
+
+    private fun buildSubject(message: AlertStreamMessage, timeLabel: String): String {
+        val name = message.eventName ?: "Parallax alert"
+        return "$name · $timeLabel"
     }
 
     suspend fun sendVerificationEmail(to: String, verificationCode: String, token: String) {

@@ -37,6 +37,6 @@ class EmailAlertConsumer(
     // -> Triggers: alert message ready for email delivery || Contract: sends provider payload and returns provider message id
     override suspend fun sendToProvider(message: AlertStreamMessage, artifactUrl: String?): String? {
         val token = googleTokenManager.getAccessToken()
-        return emailService.sendEvent(message, token)
+        return emailService.sendEvent(message, token, artifactUrl)
     }
 }

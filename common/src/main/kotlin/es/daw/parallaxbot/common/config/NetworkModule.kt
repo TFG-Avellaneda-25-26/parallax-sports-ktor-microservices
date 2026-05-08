@@ -11,9 +11,6 @@ import io.ktor.client.request.HttpRequestPipeline
 import io.ktor.client.request.header
 import io.ktor.server.config.ApplicationConfig
 
-/**
- * Shared outbound HTTP client configuration for internal service-to-service calls.
- */
 val networkModule = module {
     single {
 
@@ -36,7 +33,7 @@ val networkModule = module {
                     val requestUrl = context.url.buildString()
 
                     if (requestUrl.startsWith(internalApiBase)) {
-                        context.header("X-Bot-Api-Key", apiKey)
+                        context.header("X-Api-Key", apiKey)
                     }
                 }
             }
