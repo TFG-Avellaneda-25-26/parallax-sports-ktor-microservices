@@ -24,6 +24,7 @@ allprojects {
 
             from(sharedResources) {
                 include("shared-data.conf")
+                include("shared-data.local.conf")
                 include("shared-secrets.conf")
                 include("shared-secrets.local.conf")
                 include("logback.xml")
