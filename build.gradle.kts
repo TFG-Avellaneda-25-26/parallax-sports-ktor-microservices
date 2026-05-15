@@ -24,6 +24,7 @@ allprojects {
 
             from(sharedResources) {
                 include("shared-data.conf")
+                include("shared-data.local.conf")
                 include("shared-secrets.conf")
                 include("shared-secrets.local.conf")
                 include("logback.xml")
@@ -49,6 +50,10 @@ subprojects {
             add("implementation", libs.koin.ktor)
             add("implementation", libs.koin.logger.slf4j)
             add("implementation", libs.logback.classic)
+            add("implementation", libs.ktor.server.metrics.micrometer)
+            add("implementation", libs.micrometer.registry.prometheus)
+            add("implementation", libs.logstash.logback.encoder)
+            add("implementation", libs.kotlin.coroutines.slf4j)
         }
 
         if (project.path != ":ms-playwright" && project.path != ":ms-cloudinary") {

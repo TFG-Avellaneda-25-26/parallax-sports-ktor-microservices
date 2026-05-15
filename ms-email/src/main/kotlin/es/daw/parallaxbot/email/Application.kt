@@ -1,6 +1,8 @@
 package es.daw.parallaxbot.email
 
 import es.daw.parallaxbot.common.KoinLogger
+import es.daw.parallaxbot.common.observability.installHealth
+import es.daw.parallaxbot.common.observability.installMetrics
 import es.daw.parallaxbot.common.rootMessage
 import es.daw.parallaxbot.email.config.configureRouting
 import es.daw.parallaxbot.email.module.emailModule
@@ -32,6 +34,9 @@ fun main(args: Array<String>) {
 // -> Triggers: Ktor application initialization || Contract: wires DI, registers email routes, starts stream consumer, and handles shutdown
 fun Application.module() {
     val logger = LoggerFactory.getLogger("Application")
+
+    installMetrics("ms-email")
+    installHealth()
 
     install(Koin) {
         logger(KoinLogger())

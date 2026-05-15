@@ -28,8 +28,9 @@ fun configureDiscordBot(
 
     jda.awaitReady()
 
-    if (!config.devGuild.isNullOrBlank()) {
-        jda.registerGuildCommands(config.devGuild, commands)
+    val devGuild = config.devGuild
+    if (!devGuild.isNullOrBlank()) {
+        jda.registerGuildCommands(devGuild, commands)
     } else {
         jda.registerGlobalCommands(commands)
     }
