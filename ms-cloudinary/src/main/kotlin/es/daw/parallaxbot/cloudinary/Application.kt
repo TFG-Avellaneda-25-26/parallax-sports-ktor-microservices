@@ -4,6 +4,8 @@ import es.daw.parallaxbot.cloudinary.config.configureRouting
 import es.daw.parallaxbot.cloudinary.module.cloudinaryModule
 import es.daw.parallaxbot.cloudinary.service.CloudinaryService
 import es.daw.parallaxbot.common.config.networkModule
+import es.daw.parallaxbot.common.observability.installHealth
+import es.daw.parallaxbot.common.observability.installMetrics
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
@@ -31,6 +33,9 @@ fun main(args: Array<String>) {
 // -> Source: Ktor Application Init || Action: Register DI modules and internal Cloudinary routes || Strategy: singleton wiring with graceful stop logging
 fun Application.module() {
     val logger = LoggerFactory.getLogger("Application")
+
+    installMetrics("ms-cloudinary")
+    installHealth()
 
     install(ContentNegotiation) {
         json(Json {

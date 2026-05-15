@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 import kotlin.time.Duration.Companion.minutes
 
 class GoogleTokenManager(
-    redisClient: RedisClient,
+    private val redisClient: RedisClient,
     private val httpClient: HttpClient,
     private val emailConfig: EmailConfig
 ) {
@@ -22,7 +22,7 @@ class GoogleTokenManager(
     private val ACCESS_TOKEN_KEY = "auth:google:access_token"
     private val REFRESH_TOKEN_KEY = "auth:google:refresh_token"
 
-    private val sync = redisClient.connect().sync()
+    private val sync by lazy { redisClient.connect().sync() }
 
     suspend fun getAccessToken(): String {
         val cachedToken = sync.get(ACCESS_TOKEN_KEY)

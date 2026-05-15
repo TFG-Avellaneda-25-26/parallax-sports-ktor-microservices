@@ -4,6 +4,8 @@ import es.daw.parallaxbot.common.client.PlaywrightClient
 import es.daw.parallaxbot.common.dto.AlertStatusCallback
 import es.daw.parallaxbot.common.dto.AlertStreamMessage
 import es.daw.parallaxbot.common.mapper.mapToDto
+import es.daw.parallaxbot.common.observability.StreamConsumerMetrics
+import es.daw.parallaxbot.common.observability.alertMdc
 import es.daw.parallaxbot.common.service.SpringCallbackService
 import io.lettuce.core.Consumer
 import io.lettuce.core.RedisClient
@@ -17,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
@@ -36,7 +39,8 @@ abstract class RedisStreamConsumer(
     private val springCallbackService: SpringCallbackService,
     val streamName: String,
     val groupName: String,
-    baseName: String = "worker-discord-test"
+    baseName: String = "worker-discord-test",
+    private val metrics: StreamConsumerMetrics? = null,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val consumerName = "$baseName-1"
@@ -71,6 +75,7 @@ abstract class RedisStreamConsumer(
                 }
 
                 messages.forEach { message ->
+                    metrics?.messageConsumed()
                     launch {
                         processSingleMessage(message, syncCommands)
                     }
@@ -103,18 +108,24 @@ abstract class RedisStreamConsumer(
     }
 
     private suspend fun processSingleMessage(message: StreamMessage<String, String>, sync: RedisCommands<String, String>) {
+        val started = Clock.System.now()
         try {
             delay((100..500).random().toLong())
             val dto = mapToDto(message.body)
 
-            if (onMessageReceived(dto)) {
-                sync.xack(streamName, groupName, message.id)
-                sync.xdel(streamName, message.id)
-            } else {
-                handleFailureAndRetry(sync, message, dto)
+            withContext(alertMdc(alertId = dto.alertId.toString(), channel = dto.channel)) {
+                if (onMessageReceived(dto)) {
+                    sync.xack(streamName, groupName, message.id)
+                    sync.xdel(streamName, message.id)
+                    metrics?.messageProcessed("success", javaDurationSince(started))
+                } else {
+                    handleFailureAndRetry(sync, message, dto)
+                    metrics?.messageProcessed("retryable", javaDurationSince(started))
+                }
             }
         } catch (e: Exception) {
             logger.error("Error processing message: ${message.id}: ${e.message}")
+            metrics?.messageProcessed("error", javaDurationSince(started))
         }
     }
 
@@ -131,6 +142,12 @@ abstract class RedisStreamConsumer(
         }
 
         sync.xadd(streamName, XAddArgs().maxlen(1000), body)
+        metrics?.messageRetried()
+    }
+
+    private fun javaDurationSince(start: Instant): java.time.Duration {
+        val millis = (Clock.System.now() - start).inWholeMilliseconds
+        return java.time.Duration.ofMillis(millis)
     }
 
         /*============================================================
@@ -144,17 +161,21 @@ abstract class RedisStreamConsumer(
 
         if (message.attempts >= message.maxAttempts) {
             logger.error("Alert ${message.alertId} dropped! Max attempts (${message.maxAttempts}) exceeded!")
+            metrics?.messageDropped("max_attempts")
             return true
         }
 
         return try {
             val artifactUrl = getArtifactIfNeeded(message)
+            val providerSendStart = Clock.System.now()
             val providerMessageId = sendToProvider(message, artifactUrl)
+            metrics?.providerSend("success", javaDurationSince(providerSendStart))
 
             reportStatusToSpring(message, "sent", workerId, providerMessageId, startTime)
             true
         } catch (e: ProviderPermanentFailureException) {
             logger.warn("Permanent failure on alert ${message.alertId} reason=${e.errorCode}")
+            metrics?.providerSend("permanent_failure", javaDurationSince(startTime))
             reportStatusToSpring(
                 message,
                 "failed_permanent",
@@ -162,9 +183,11 @@ abstract class RedisStreamConsumer(
                 errorMessage = e.message,
                 errorCode = e.errorCode
             )
+            metrics?.messageDropped("permanent_failure")
             true
         } catch (e: Exception) {
             logger.error("Failed  alert: ${message.alertId}: ${e.message}")
+            metrics?.providerSend("retryable_failure", javaDurationSince(startTime))
             reportStatusToSpring(message, "failed-retryable", workerId, errorMessage = e.message)
             false
         }
@@ -181,18 +204,27 @@ abstract class RedisStreamConsumer(
             message.venueTimezone
         }
 
+        val start = Clock.System.now()
         return browserLimit.withPermit {
-            val response = playwrightClient.generateEventScreenshot(
-                eventId = message.eventId,
-                channel = message.channel,
-                timezone = timezone,
-                renderHash = message.renderHash,
-            )
+            try {
+                val response = playwrightClient.generateEventScreenshot(
+                    eventId = message.eventId,
+                    channel = message.channel,
+                    timezone = timezone,
+                    renderHash = message.renderHash,
+                )
 
-            if (!response.success || response.url == null)
-                throw Exception("Playwright failed: ${response.errorMessage}")
+                if (!response.success || response.url == null) {
+                    metrics?.artifactFetch("failure", javaDurationSince(start))
+                    throw Exception("Playwright failed: ${response.errorMessage}")
+                }
 
-            response.url
+                metrics?.artifactFetch("success", javaDurationSince(start))
+                response.url
+            } catch (e: Exception) {
+                metrics?.artifactFetch("error", javaDurationSince(start))
+                throw e
+            }
         }
     }
 
@@ -221,8 +253,11 @@ abstract class RedisStreamConsumer(
                     errorCode = errorCode
                 )
             )
+        }.onSuccess {
+            metrics?.callbackToSpring(status, "success")
         }.onFailure {
             logger.warn("Spring API is offline. Status not reported for alert: ${message.alertId}")
+            metrics?.callbackToSpring(status, "failure")
         }
     }
 
