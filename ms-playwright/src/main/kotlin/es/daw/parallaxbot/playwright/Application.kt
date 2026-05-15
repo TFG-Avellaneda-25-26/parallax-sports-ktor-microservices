@@ -1,5 +1,7 @@
 package es.daw.parallaxbot.playwright
 
+import es.daw.parallaxbot.common.observability.installHealth
+import es.daw.parallaxbot.common.observability.installMetrics
 import es.daw.parallaxbot.playwright.config.configureRouting
 import es.daw.parallaxbot.playwright.module.playwrightModule
 import es.daw.parallaxbot.playwright.service.PlaywrightService
@@ -26,6 +28,9 @@ fun main(args: Array<String>) {
 // -> Triggers: Ktor application initialization || Contract: wires DI, registers screenshot route, and closes browser resources on shutdown
 fun Application.module() {
     val logger = LoggerFactory.getLogger("Application")
+
+    installMetrics("ms-playwright")
+    installHealth()
 
     install(Koin) {
         slf4jLogger()

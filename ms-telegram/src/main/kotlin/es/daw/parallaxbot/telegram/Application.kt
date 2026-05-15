@@ -2,6 +2,8 @@ package es.daw.parallaxbot.telegram
 
 import com.github.kotlintelegrambot.Bot
 import es.daw.parallaxbot.common.KoinLogger
+import es.daw.parallaxbot.common.observability.installHealth
+import es.daw.parallaxbot.common.observability.installMetrics
 import es.daw.parallaxbot.common.rootMessage
 import es.daw.parallaxbot.telegram.module.telegramModule
 import es.daw.parallaxbot.telegram.service.TelegramAlertConsumer
@@ -32,6 +34,9 @@ fun main(args: Array<String>) {
 fun Application.module() {
 
     val logger = LoggerFactory.getLogger("Application")
+
+    installMetrics("ms-telegram")
+    installHealth()
 
     install(Koin) {
         logger(KoinLogger())

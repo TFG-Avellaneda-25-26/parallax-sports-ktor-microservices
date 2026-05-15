@@ -1,6 +1,8 @@
 package es.daw.parallaxbot.discord
 
 import es.daw.parallaxbot.common.KoinLogger
+import es.daw.parallaxbot.common.observability.installHealth
+import es.daw.parallaxbot.common.observability.installMetrics
 import es.daw.parallaxbot.common.rootMessage
 import es.daw.parallaxbot.discord.module.discordModule
 import es.daw.parallaxbot.discord.service.DiscordAlertConsumer
@@ -31,6 +33,9 @@ fun main(args: Array<String>) {
  */
 // -> Source: Ktor Application Init || Action: Wire modules and start Discord worker loop || Strategy: coroutine-based startup with graceful shutdown hooks
 fun Application.module() {
+    installMetrics("ms-discord")
+    installHealth()
+
     install(ContentNegotiation) {
         json(Json {
             ignoreUnknownKeys = true

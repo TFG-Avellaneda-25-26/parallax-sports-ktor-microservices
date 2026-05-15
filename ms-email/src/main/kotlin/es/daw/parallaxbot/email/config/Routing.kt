@@ -72,7 +72,8 @@ fun Application.configureRouting() {
 
                 call.respond(HttpStatusCode.OK, mapOf("message" to "Verification email sent to ${request.email}"))
             } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError, "Email verification failed: ${e.message}")
+                logger.error("Email verification failed for ${request.email}", e)
+                call.respond(HttpStatusCode.InternalServerError, "Email verification failed: ${e.cause?.message ?: e.message}")
             }
         }
     }

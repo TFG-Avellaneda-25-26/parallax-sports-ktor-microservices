@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1.7
+#
+# Runtime image for ms-playwright. Uses Microsoft's official Playwright-for-Java
+# base image, which ships Chromium/Firefox/WebKit binaries matching the
+# Playwright library version (1.58.0) — avoids the runtime browser download
+# that would happen on first use otherwise.
+#
+# Jenkins runs `./gradlew :ms-playwright:installDist` BEFORE this build, so the
+# distribution is already in the context.
+#
+# Build with:
+#   docker build -f Dockerfile.playwright -t localhost:5000/parallax-ms-playwright:latest .
+
+FROM mcr.microsoft.com/playwright/java:v1.58.0-noble
+
+WORKDIR /app
+
+COPY ms-playwright/build/install/ms-playwright /app
+
+RUN ln -s /app/bin/ms-playwright /app/bin/run
+
+# Playwright runs as the 'pwuser' in this image; keep it for browser sandboxing.
+USER pwuser
+
+ENTRYPOINT ["/app/bin/run"]
