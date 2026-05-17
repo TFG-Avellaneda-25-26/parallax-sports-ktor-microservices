@@ -11,6 +11,5 @@ dependencyResolutionManagement {
 include(":common")
 include(":ms-playwright")
 include(":ms-discord")
-include(":ms-telegram")
 include(":ms-email")
 include(":ms-cloudinary")
