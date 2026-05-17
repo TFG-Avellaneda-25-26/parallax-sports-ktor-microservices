@@ -6,7 +6,7 @@ pipeline {
         STACK_PATH  = '/opt/stack'
         // Listed once; reused for build/push/deploy loops.
         // ms-playwright uses Dockerfile.playwright; others share Dockerfile.
-        SERVICES        = 'ms-discord ms-email ms-cloudinary ms-telegram'
+        SERVICES        = 'ms-discord ms-email ms-cloudinary'
         PLAYWRIGHT_SVC  = 'ms-playwright'
     }
 
