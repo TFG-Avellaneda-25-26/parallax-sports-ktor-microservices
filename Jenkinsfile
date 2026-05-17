@@ -89,7 +89,7 @@ pipeline {
                     sh """
                         cd ${STACK_PATH}
                         docker compose pull ${serviceList} || true
-                        docker compose up -d --no-deps ${serviceList}
+                        docker compose --profile apps up -d --no-deps --force-recreate ${serviceList}
                     """
                 }
             }
