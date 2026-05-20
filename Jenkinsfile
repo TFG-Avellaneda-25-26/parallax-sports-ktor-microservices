@@ -88,8 +88,8 @@ pipeline {
                     def serviceList = all.join(' ')
                     sh """
                         cd ${STACK_PATH}
-                        docker compose pull ${serviceList} || true
-                        docker compose --profile apps up -d --no-deps --force-recreate ${serviceList}
+                        COMPOSE_PROFILES=apps docker compose pull ${serviceList}
+                        COMPOSE_PROFILES=apps docker compose up -d --no-deps --force-recreate --pull=always ${serviceList}
                     """
                 }
             }
